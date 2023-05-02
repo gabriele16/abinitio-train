@@ -1,0 +1,7 @@
+nequip==0.5.5
+torch==1.11
+wandb==0.14.2
+mdanalysis==2.4.3
+nglview==3.0.4
+jedi==0.18.2
+gdown==4.7.1
