@@ -5,7 +5,7 @@ import numpy as np
 import site
 import textwrap
 from ase.io import read, write
-
+import ase.data
 
 def MD_reader_xyz(f, data_dir, no_skip=0):
     filename = os.path.join(data_dir, f)
@@ -99,6 +99,48 @@ def set_tags_frc_constr(ase_traj, dim = 0):
         ase_traj[i].set_tags(ase_traj[i].get_forces()[:,dim] == 0.0)
     return ase_traj
 
+def sort_xyz_file(input_file, output_file):
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+    
+    # Extract the number of atoms and comment line
+    num_atoms = int(lines[0].strip())
+    comment_line = lines[1]
+    
+    # Extract lattice and properties from the comment line
+    lattice_start_index = comment_line.find("Lattice=")
+    lattice_end_index = comment_line.find(" Properties=")
+    lattice_line = comment_line[lattice_start_index:lattice_end_index]
+    properties_line = comment_line[lattice_end_index:]
+    
+    # Extract atomic symbols and positions
+    symbols = []
+    positions = []
+    for line in lines[2:]:
+        parts = line.split()
+        symbols.append(parts[0])
+        positions.append([float(p) for p in parts[1:4]])
+    
+    # Get atomic numbers for each symbol
+    atomic_nums = [ase.data.atomic_numbers[sym] for sym in symbols]
+    
+    # Sort the symbols and positions by atomic number
+    symbols_sorted = [sym for _, sym in sorted(zip(atomic_nums, symbols))]
+    positions_sorted = [pos for _, pos in sorted(zip(atomic_nums, positions))]
+    
+    # Update the symbols and positions in the XYZ file lines
+    lines[2:] = [f"{sym} {pos[0]:.8f} {pos[1]:.8f} {pos[2]:.8f}\n" for sym, pos in zip(symbols_sorted, positions_sorted)]
+    
+    # Write the sorted structure back to an XYZ file
+    with open(output_file, 'w') as f:
+        # Write the number of atoms
+        f.write(f"{num_atoms}\n")
+        
+        # Write the comment line
+        f.write(comment_line)
+        
+        # Write the sorted symbols and positions
+        f.writelines(lines[2:])
 
 def generate_allegro_input(*args, **kwargs):
 
@@ -618,4 +660,88 @@ global_rescale_scale_trainable: false
 """
     return nequip_input
 
+def generate_cp2k_input_md(*args, **kwargs):
+
+    default_system_name = "system"
+    default_model_name = "model.pth"
+    default_method_name = "NEQUIP"
+    default_coord_file_name = "coords.xyz"
+    default_n_steps = 1000
+    default_unit_coords = "angstrom"
+    default_unit_energy = "Hartree"
+    default_unit_forces = "Hartree*Bohr^-1"
+
+    system_name = kwargs.get('system_name', default_system_name)
+    model_name = kwargs.get('model_name', default_model_name)
+    method_name = kwargs.get('method_name', default_method_name)
+    coord_file_name = kwargs.get('coord_file_name', default_coord_file_name)
+    n_steps = kwargs.get('n_steps', default_n_steps)
+
+    chemical_symbols = kwargs.get('chemical_symbols', [])
+    symbols = ' '.join(f"{symbol}" for symbol in chemical_symbols)
+
+    cell_vals = kwargs.get('cell', [])
+    cell = ' '.join(f"{cell_value}" for cell_value in cell_vals)    
+
+    unit_coords = kwargs.get('unit_coords', default_unit_coords)
+    unit_forces = kwargs.get('unit_forces', default_unit_forces)
+    unit_energy = kwargs.get('unit_energy', default_unit_energy)
+    
+    cp2k_input_md = f"""
+&GLOBAL
+  PROJECT {system_name}
+  RUN_TYPE MD
+&END GLOBAL
+&FORCE_EVAL
+  METHOD FIST
+  &MM
+    &FORCEFIELD
+     &NONBONDED
+     &{method}
+        ATOMS {symbols}
+        PARM_FILE_NAME {model_name}
+        UNIT_COORDS {unit_coords}
+        UNIT_ENERGY {unit_energy}
+        UNIT_FORCES {unit_forces}
+     &END {method}
+    &END NONBONDED
+    &END FORCEFIELD
+    &POISSON
+      &EWALD
+        EWALD_TYPE none
+      &END EWALD
+    &END POISSON
+  &END MM
+  &SUBSYS
+    &CELL
+       ABC {cell}
+#      MULTIPLE_UNIT_CELL 2 2 2
+    &END CELL
+    &TOPOLOGY
+#     MULTIPLE_UNIT_CELL 2 2 2
+      COORD_FILE_NAME {coord_file_name}
+      COORD_FILE_FORMAT XYZ
+    &END TOPOLOGY
+  &END SUBSYS
+&END FORCE_EVAL
+&MOTION
+#  &CONSTRAINT
+#    &FIXED_ATOMS
+#      LIST 1..240
+#    &END
+#  &END
+  &MD
+    ENSEMBLE NVT
+    STEPS {n_steps}
+    TIMESTEP 0.5
+    TEMPERATURE 300
+    &THERMOSTAT
+      &CSVR
+        TIMECON 10
+      &END CSVR
+    &END
+  &END MD
+&END MOTION
+"""
+    return cp2k_input_md
 

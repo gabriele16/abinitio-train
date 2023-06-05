@@ -16,6 +16,7 @@ from nequip.utils import Config
 import allegro
 import MDAnalysis as mda
 from MDAnalysis.analysis import rdf
+from datetime import datetime
 sys.path.append('../')
 from utils.utils import *
 
@@ -31,6 +32,11 @@ def parse_arguments():
                            action="store_true")
    arg_parser.add_argument('--no-train', dest='train',
                            action="store_false")
+   arg_parser.add_argument('--deploy',
+                           help='deploy model',
+                           action="store_true")
+   arg_parser.add_argument('--no-deploy', dest='deploy',
+                           action="store_false")   
    arg_parser.add_argument('--data_load',
                            help='load data',
                            action="store_true")
@@ -70,10 +76,24 @@ def parse_arguments():
                            required = False,
                            default = "dataset.extxyz",
                            help="use 'dataset.extxyz' as default")
+   arg_parser.add_argument('--cp2k_coord_file_name',
+                           required = False,
+                           default = "None",
+                           help="provide a CP2K configuration file in xyz or extxyz format")
+   arg_parser.add_argument('--cell',
+                           required = False,
+                           default = [None,None,None],
+                           type=float,
+                           nargs=3, 
+                           help='three floats containing the cell vectors in Angstrom')   
    arg_parser.add_argument('--system_name',
-                           required = True,
+                           required = False,
                            default = "system_name",
                            help="compulsory, use 'system_name' as default")
+   arg_parser.add_argument('--model_name',
+                           required = False,
+                           default = "model.pth",
+                           help="Name of the serialized model use 'model.pth' as default")   
    arg_parser.add_argument('--cutoff',
                            required = False,
                            default = 5.0,
@@ -98,6 +118,10 @@ def parse_arguments():
                            required = False,
                            default = 10000,
                            help="maximum number of epochs")
+   arg_parser.add_argument('--n_steps',
+                           required = False,
+                           default = 1000,
+                           help="number of steps to run MD with CP2K")   
    arg_parser.add_argument('--n_train',
                            required = False,
                            default = 1000,
@@ -111,7 +135,23 @@ def parse_arguments():
                            default = "float64",
                            choices = ["float64", "float32"],
                            help="use single or double precision")
-
+   arg_parser.add_argument('--unit_coords',
+                           required = False,
+                           default = "angstrom",
+                           help="units of coordinates of the allegro/nequip model for CP2K")
+   arg_parser.add_argument('--unit_energy',
+                           required = False,
+                           default = "Hartree",
+                           help="units of energy of the allegro/nequip model for CP2K")
+   arg_parser.add_argument('--unit_forces',
+                           required = False,
+                           default = "Hartree*Bohr^-1",
+                           help="units of forces of the allegro/nequip model for CP2K")
+   arg_parser.add_argument('--cp2k_exe',
+                           required = False,
+                           default = "cp2k.ssmp",
+                           help="path to CP2K executable")
+   
    return arg_parser.parse_args()
 
 def print_run_info():
@@ -157,6 +197,15 @@ def main():
    n_train_value = args.n_train
    n_val_value = args.n_val
    max_epochs_value = args.max_epochs
+   #cp2k options
+   coord_file_name = args.cp2k_coord_file_name
+   cell = args.cell
+   n_steps = args.n_steps
+   model_name = args.model_name
+   unit_energy = args.unit_energy
+   unit_coords = args.unit_coords
+   unit_forces =  args.unit_forces
+   cp2k_exe = args.cp2k_exe
 
    print_run_info()
    
@@ -168,7 +217,7 @@ def main():
    
    if args.train and method == "allegro":
       dataset = data_dir+'/'+dataset
-      conf = sort(read(dataset))
+      conf = sort(read(dataset), index = "-1")
       symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
@@ -198,8 +247,65 @@ def main():
        subprocess.call(f"nequip-train {system_name}.yaml", shell=True)
        print("##################")
        print("Training complete")
-       
 
+   if args.deploy:
+       print("##################")
+       print("Deploy model:")
+       depl_time = datetime.now().strftime("%d%m%Y_%H%M")
+       print(f"nequip-deploy build --train-dir {resultsdir}/{system_name} {system_name}_deploy_{depl_time}.pth")
+       subprocess.call(f"nequip-deploy build --train-dir {resultsdir}/{system_name} {system_name}_deploy_{depl_time}.pth", shell=True)
+       print("Model deployed")
+       print("##################")      
+
+   if args.run_md:
+       print("##################")
+       print("Run MD")
+       subprocess.call("rm -rf cp2k_run", shell=True)
+       subprocess.call("mkdir cp2k_run", shell=True)
+       if args.deploy:
+           model_name = f"{system_name}_deploy_{depl_time}.pth"
+       subprocess.call(f"cp {model_name} cp2k_run/.", shell = True)
+
+       if ".extxyz" in coord_file_name:
+
+          conf = sort(read(coord_file_name), index = '-1')
+
+          write("temp.extxyz", conf)
+          symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
+          atomic_nums = [ase.data.atomic_numbers[sym] for sym in symbols_list]
+          symbols_list = [e[1] for e in sorted(zip(atomic_nums, symbols_list))]
+
+          sort_xyz_file("temp.extxyz", f"cp2k_run/{coord_file_name}")
+          subprocess.call("rm temp.extxyz", shell =True)
+
+          if "None" in cell:
+             cell = [conf.cell[i,i] for i in range(len(conf.cell))]
+
+       if ".xyz" in coord_file_name:
+
+          conf = sort(read(coord_file_name), index = '-1')
+
+          write("temp.extxyz", conf)
+          symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
+          atomic_nums = [ase.data.atomic_numbers[sym] for sym in symbols_list]
+          symbols_list = [e[1] for e in sorted(zip(atomic_nums, symbols_list))]
+
+          sort_xyz_file("temp.extxyz", f"cp2k_run/{coord_file_name}")
+          subprocess.call("rm temp.extxyz", shell =True)
+
+       print(cell, symbols_list)
+       cp2k_input_md = generate_cp2k_input_md(system_name=system_name, coord_file_name = coord_file_name, method_name = method.upper(),
+                                             model_name  = model_name, n_steps = n_steps_value, cell = cell, 
+                                             unit_coords = unit_coords, unit_energy = unit_energy, unit_forces = unit_forces, 
+                                             chemical_symbols=symbols_list)
+       with open("cp2k_run/neq_alle_md.inp", "w") as f:
+          f.write(cp2k_input_md)
+       
+       subprocess.call(f"cd cp2k_run/ && {cp2k_exe} -i neq_alle_md.inp ",shell=True)
+       print("MD completed")
+       print("##################")
+       
+       
 if __name__ == "__main__":
    
    main()
