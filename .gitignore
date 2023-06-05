@@ -155,6 +155,10 @@ cython_debug/
 wat_gra_bil_film
 wat_bil_gra_aimd
 
+results
+
+*.yaml
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
