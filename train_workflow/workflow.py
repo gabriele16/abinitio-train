@@ -43,6 +43,12 @@ def parse_arguments():
    arg_parser.add_argument('--no-data_load',
                            dest='data_load',
                            action="store_false")
+   arg_parser.add_argument('--mask_labels',
+                           help='mask labels',
+                           action="store_true")
+   arg_parser.add_argument('--no-mask_labels',
+                           dest='mask_labels',
+                           action="store_false")   
    arg_parser.add_argument('--run_md',
                            help="run md with cp2k",
                            action="store_true")
@@ -180,6 +186,7 @@ def main():
 
    args = parse_arguments()
    method = args.method
+   mask_labels = args.mask_labels
    data_dir = args.data_dir
    resultsdir = args.resultsdir
    data_pos = args.positions
@@ -199,8 +206,8 @@ def main():
    max_epochs_value = args.max_epochs
    #cp2k options
    coord_file_name = args.cp2k_coord_file_name
-   cell = args.cell
-   n_steps = args.n_steps
+   cell_value = args.cell
+   n_steps_value = args.n_steps
    model_name = args.model_name
    unit_energy = args.unit_energy
    unit_coords = args.unit_coords
@@ -222,7 +229,7 @@ def main():
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value,
-              chemical_symbols=symbols_list)
+              chemical_symbols=symbols_list, mask_labels = mask_labels)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(allegro_input)
    elif args.train and method == "nequip":
@@ -232,18 +239,20 @@ def main():
       nequip_input = generate_nequip_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, num_features = num_features_value, n_train = n_train_value, n_val = n_val_value,
-              max_epochs = max_epochs_value, chemical_symbols=symbols_list)
+              max_epochs = max_epochs_value, chemical_symbols=symbols_list, mask_labels = mask_labels)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(nequip_input)
    elif args.train:
        raise ValueError("Error: Training is only supported for method 'nequip' or 'allegro.")
-   
-   config = Config.from_file(f'{system_name}.yaml')
+
+   if args.train or args.deploy:
+
+      config = Config.from_file(f'{system_name}.yaml')
    
    if args.train:
        print("##################")
        print("Train model")
-       subprocess.call("rm -rf results", shell=True)
+       subprocess.call("mv results results_bak", shell=True)
        subprocess.call(f"nequip-train {system_name}.yaml", shell=True)
        print("##################")
        print("Training complete")
@@ -260,16 +269,17 @@ def main():
    if args.run_md:
        print("##################")
        print("Run MD")
-       subprocess.call("rm -rf cp2k_run", shell=True)
+       subprocess.call("mv cp2k_run cp2k_run_bak", shell=True)
        subprocess.call("mkdir cp2k_run", shell=True)
        if args.deploy:
            model_name = f"{system_name}_deploy_{depl_time}.pth"
+       if not os.path.exists(model_name):
+          raise FileNotFoundError(f"{model_name} is either not found or not in the current running directory.")
        subprocess.call(f"cp {model_name} cp2k_run/.", shell = True)
 
        if ".extxyz" in coord_file_name:
 
-          conf = sort(read(coord_file_name), index = '-1')
-
+          conf = sort(read(coord_file_name, index = '-1'))
           write("temp.extxyz", conf)
           symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
           atomic_nums = [ase.data.atomic_numbers[sym] for sym in symbols_list]
@@ -278,12 +288,12 @@ def main():
           sort_xyz_file("temp.extxyz", f"cp2k_run/{coord_file_name}")
           subprocess.call("rm temp.extxyz", shell =True)
 
-          if "None" in cell:
-             cell = [conf.cell[i,i] for i in range(len(conf.cell))]
+          if None in cell_value:
+             cell_value = [conf.cell[i,i] for i in range(len(conf.cell))]
 
        if ".xyz" in coord_file_name:
 
-          conf = sort(read(coord_file_name), index = '-1')
+          conf = sort(read(coord_file_name, index = '-1'))
 
           write("temp.extxyz", conf)
           symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
@@ -293,9 +303,8 @@ def main():
           sort_xyz_file("temp.extxyz", f"cp2k_run/{coord_file_name}")
           subprocess.call("rm temp.extxyz", shell =True)
 
-       print(cell, symbols_list)
-       cp2k_input_md = generate_cp2k_input_md(system_name=system_name, coord_file_name = coord_file_name, method_name = method.upper(),
-                                             model_name  = model_name, n_steps = n_steps_value, cell = cell, 
+       cp2k_input_md = generate_cp2k_input_md(system_name=system_name, coord_file_name = coord_file_name, method_name = args.method.upper(),
+                                             model_name  = model_name, n_steps = n_steps_value, cell = cell_value, 
                                              unit_coords = unit_coords, unit_energy = unit_energy, unit_forces = unit_forces, 
                                              chemical_symbols=symbols_list)
        with open("cp2k_run/neq_alle_md.inp", "w") as f:

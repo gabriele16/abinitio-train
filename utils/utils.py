@@ -155,6 +155,7 @@ def generate_allegro_input(*args, **kwargs):
     default_n_train = 1000
     default_n_val = 100
     default_max_epochs = 100
+    default_mask_labels = False
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -170,6 +171,15 @@ def generate_allegro_input(*args, **kwargs):
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = textwrap.indent('\n'.join(f"- {symbol}" for symbol in chemical_symbols), '  ')
+
+    mask_labels = kwargs.get('mask_labels', default_mask_labels)
+    if mask_labels:
+        mask_hack = ""
+        ignore_nan_value = "true"
+    else:
+        mask_hack = "#"
+        ignore_nan_value = "false"
+    
 
     allegro_input = f"""
 # general
@@ -251,6 +261,14 @@ ase_args:
 chemical_symbols:
 {symbols}
 
+# ! This important line adds a "pre-transform" to the dataset that processes the `AtomicData` *after* it is loaded and processed
+#   from the original data file, but before it is cached to disk for later training use.  This function can be anything, but here
+#   we use `nequip.data.transforms.MaskByAtomTag` to make ground truth force labels on atoms with a certain tag NaN (i.e. masked)
+#   We can mask multiple tags if we like, or mask other per-atom fields.  In this case, we mask out tag 0, which is subsurface
+#   atoms in the toy data from `generate_slab.py`.
+{mask_hack}dataset_include_keys: [\"tags\"]
+{mask_hack}dataset_pre_transform: !!python/object:nequip.data.transforms.MaskByAtomTag {{'tag_values_to_mask': [0], 'fields_to_mask': ['forces']}}
+
 # logging
 wandb: false
 #wandb_project: allegro-water-tutorial
@@ -275,7 +293,9 @@ ema_use_num_updates: true
 
 # loss function
 loss_coeffs:
-  forces: 1.
+  forces:
+    - 1
+    - {{\"ignore_nan\": {ignore_nan_value}}}
   total_energy:
     - 1.
     - PerAtomMSELoss
@@ -293,8 +313,10 @@ optimizer_params:
 metrics_components:
   - - forces                               # key
     - mae                                  # "rmse" or "mae"
+    - ignore_nan: {ignore_nan_value}
   - - forces
     - rmse
+    - ignore_nan: {ignore_nan_value}    
   - - total_energy
     - mae
   - - total_energy
@@ -329,6 +351,7 @@ def generate_nequip_input(*args, **kwargs):
     default_n_train = 1000
     default_n_val = 100
     default_max_epochs = 100
+    default_mask_labels = False
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -345,6 +368,14 @@ def generate_nequip_input(*args, **kwargs):
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = textwrap.indent('\n'.join(f"- {symbol}" for symbol in chemical_symbols), '  ')
+
+    mask_labels = kwargs.get('mask_labels', default_mask_labels)
+    if mask_labels:
+        mask_hack = ""
+        ignore_nan_value = "true"
+    else:
+        mask_hack = "#"
+        ignore_nan_value = "false"
 
     nequip_input = f"""
 # IMPORTANT: READ THIS
@@ -451,6 +482,14 @@ dataset_file_name: {dataset_file_name}
 ase_args: # any arguments needed by ase.io.read
   format: extxyz
 
+# ! This important line adds a "pre-transform" to the dataset that processes the `AtomicData` *after* it is loaded and processed
+#   from the original data file, but before it is cached to disk for later training use.  This function can be anything, but here
+#   we use `nequip.data.transforms.MaskByAtomTag` to make ground truth force labels on atoms with a certain tag NaN (i.e. masked)
+#   We can mask multiple tags if we like, or mask other per-atom fields.  In this case, we mask out tag 0, which is subsurface
+#   atoms in the toy data from `generate_slab.py`.
+{mask_hack}dataset_include_keys: [\"tags\"]
+{mask_hack}dataset_pre_transform: !!python/object:nequip.data.transforms.MaskByAtomTag {{'tag_values_to_mask': [0], 'fields_to_mask': ['forces']}}
+
 # If you want to use a different dataset for validation, you can specify
 # the same types of options using a `validation_` prefix:
 # validation_dataset: ase
@@ -507,7 +546,10 @@ early_stopping_upper_bounds: # stop early if a metric value is higher than the b
 
 # loss function
 loss_coeffs: # different weights to use in a weighted loss functions
-  forces: 1 # if using PerAtomMSELoss, a default weight of 1:1 on each should work well
+  forces:
+    - 1 # if using PerAtomMSELoss, a default weight of 1:1 on each should work well
+    - MSELoss
+    - {{\"ignore_nan\": {ignore_nan_value}}}
   total_energy:
     - 1
     - PerAtomMSELoss
@@ -546,14 +588,18 @@ loss_coeffs: # different weights to use in a weighted loss functions
 metrics_components:
   - - forces # key
     - mae # "rmse" or "mae"
+    - ignore_nan: {ignore_nan_value}
   - - forces
     - rmse
+    - ignore_nan: {ignore_nan_value}
   - - forces
     - mae
+    - ignore_nan: {ignore_nan_value}
     - PerSpecies: True # if true, per species contribution is counted separately
       report_per_component: False # if true, statistics on each component (i.e. fx, fy, fz) will be counted separately
   - - forces
     - rmse
+    - ignore_nan: {ignore_nan_value}
     - PerSpecies: True
       report_per_component: False
   - - total_energy
@@ -697,13 +743,13 @@ def generate_cp2k_input_md(*args, **kwargs):
   &MM
     &FORCEFIELD
      &NONBONDED
-     &{method}
+     &{method_name}
         ATOMS {symbols}
         PARM_FILE_NAME {model_name}
         UNIT_COORDS {unit_coords}
         UNIT_ENERGY {unit_energy}
         UNIT_FORCES {unit_forces}
-     &END {method}
+     &END {method_name}
     &END NONBONDED
     &END FORCEFIELD
     &POISSON
