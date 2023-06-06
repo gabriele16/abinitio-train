@@ -1,5 +1,5 @@
 import subprocess
-import sys
+import sys, os
 from setuptools import setup, find_packages
 
 with open('requirements.txt') as f:
@@ -7,10 +7,14 @@ with open('requirements.txt') as f:
 
 # Clone and install allegro and nequip package 
 subprocess.run(["git", "clone", "--depth", "1", "https://github.com/mir-group/allegro.git"])
-subprocess.run([sys.executable, "-m", "pip", "install", "./allegro"])
+os.chdir("allegro")
+subprocess.run(["pip", "install", "."])
+os.chdir("../")
 
 subprocess.run(["git", "clone", "-b", "masks", "https://github.com/mir-group/nequip.git"])
-subprocess.run([sys.executable, "-m", "pip", "install", "./nequip"])
+os.chdir("nequip")
+subprocess.run(["pip", "install", "."])
+os.chdir("../")
 
 setup(
     name='abinitio_train',

@@ -242,8 +242,8 @@ edge_eng_mlp_latent_dimensions: [32]
 edge_eng_mlp_nonlinearity: null
 edge_eng_mlp_initialization: uniform
 
-include_keys:
-  - user_label
+#include_keys:
+#  - user_label
 key_mapping:
   user_label: label0
 
@@ -372,10 +372,10 @@ def generate_nequip_input(*args, **kwargs):
     mask_labels = kwargs.get('mask_labels', default_mask_labels)
     if mask_labels:
         mask_hack = ""
-        ignore_nan_value = "true"
+        ignore_nan_value = "True"
     else:
         mask_hack = "#"
-        ignore_nan_value = "false"
+        ignore_nan_value = "False"
 
     nequip_input = f"""
 # IMPORTANT: READ THIS
@@ -453,8 +453,8 @@ use_sc: true # use self-connection or not, usually gives big improvement
 # in most cases working with the ase option and an extxyz file is by far the simplest way to do it and we strongly recommend using this
 # simply provide a single extxyz file that contains the structures together with energies and forces (generated with ase.io.write(atoms, format='extxyz', append=True))
 
-include_keys:
-  - user_label
+#include_keys:
+#  - user_label
 key_mapping:
   user_label: label0
 
@@ -592,16 +592,16 @@ metrics_components:
   - - forces
     - rmse
 {mask_hack}    - ignore_nan: {ignore_nan_value}
-  - - forces
-    - mae
-{mask_hack}    - ignore_nan: {ignore_nan_value}
-    - PerSpecies: True # if true, per species contribution is counted separately
-      report_per_component: False # if true, statistics on each component (i.e. fx, fy, fz) will be counted separately
-  - - forces
-    - rmse
-{mask_hack}    - ignore_nan: {ignore_nan_value}
-    - PerSpecies: True
-      report_per_component: False
+##  - - forces
+##    - mae
+##{mask_hack}    - ignore_nan: {ignore_nan_value}
+##    - PerSpecies: True # if true, per species contribution is counted separately
+##      report_per_component: False # if true, statistics on each component (i.e. fx, fy, fz) will be counted separately
+##  - - forces
+##    - rmse
+##{mask_hack}    - ignore_nan: {ignore_nan_value}
+##    - PerSpecies: True
+##      report_per_component: False
   - - total_energy
     - mae
   - - total_energy
