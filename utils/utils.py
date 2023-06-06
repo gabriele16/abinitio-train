@@ -175,10 +175,10 @@ def generate_allegro_input(*args, **kwargs):
     mask_labels = kwargs.get('mask_labels', default_mask_labels)
     if mask_labels:
         mask_hack = ""
-        ignore_nan_value = "true"
+        ignore_nan_value = "True"
     else:
         mask_hack = "#"
-        ignore_nan_value = "false"
+        ignore_nan_value = "False"
     
 
     allegro_input = f"""
@@ -295,7 +295,7 @@ ema_use_num_updates: true
 loss_coeffs:
   forces:
     - 1
-    - {{\"ignore_nan\": {ignore_nan_value}}}
+{mask_hack}    - {{\"ignore_nan\": {ignore_nan_value}}}
   total_energy:
     - 1.
     - PerAtomMSELoss
@@ -313,10 +313,10 @@ optimizer_params:
 metrics_components:
   - - forces                               # key
     - mae                                  # "rmse" or "mae"
-    - ignore_nan: {ignore_nan_value}
+{mask_hack}    - ignore_nan: {ignore_nan_value}
   - - forces
     - rmse
-    - ignore_nan: {ignore_nan_value}    
+{mask_hack}    - ignore_nan: {ignore_nan_value}    
   - - total_energy
     - mae
   - - total_energy
@@ -549,7 +549,7 @@ loss_coeffs: # different weights to use in a weighted loss functions
   forces:
     - 1 # if using PerAtomMSELoss, a default weight of 1:1 on each should work well
     - MSELoss
-    - {{\"ignore_nan\": {ignore_nan_value}}}
+{mask_hack}    - {{\"ignore_nan\": {ignore_nan_value}}}
   total_energy:
     - 1
     - PerAtomMSELoss
@@ -588,18 +588,18 @@ loss_coeffs: # different weights to use in a weighted loss functions
 metrics_components:
   - - forces # key
     - mae # "rmse" or "mae"
-    - ignore_nan: {ignore_nan_value}
+{mask_hack}    - ignore_nan: {ignore_nan_value}
   - - forces
     - rmse
-    - ignore_nan: {ignore_nan_value}
+{mask_hack}    - ignore_nan: {ignore_nan_value}
   - - forces
     - mae
-    - ignore_nan: {ignore_nan_value}
+{mask_hack}    - ignore_nan: {ignore_nan_value}
     - PerSpecies: True # if true, per species contribution is counted separately
       report_per_component: False # if true, statistics on each component (i.e. fx, fy, fz) will be counted separately
   - - forces
     - rmse
-    - ignore_nan: {ignore_nan_value}
+{mask_hack}    - ignore_nan: {ignore_nan_value}
     - PerSpecies: True
       report_per_component: False
   - - total_energy

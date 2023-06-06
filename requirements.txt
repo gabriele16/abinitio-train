@@ -1,11 +1,9 @@
 numpy
 pandas
 ase
-nequip==0.6.0
 torch==1.13
 wandb==0.14.2
 mdanalysis==2.4.3
 nglview==3.0.4
 jedi==0.18.2
 gdown==4.7.1
-git+https://github.com/mir-group/allegro.git
