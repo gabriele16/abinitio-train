@@ -310,7 +310,7 @@ def main():
        with open("cp2k_run/neq_alle_md.inp", "w") as f:
           f.write(cp2k_input_md)
        
-       subprocess.call(f"cd cp2k_run/ && {cp2k_exe} -i neq_alle_md.inp ",shell=True)
+       subprocess.call(f"cd cp2k_run/ && {cp2k_exe} -i neq_alle_md.inp > out.out &",shell=True)
        print("MD completed")
        print("##################")
        
