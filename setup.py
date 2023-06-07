@@ -5,17 +5,6 @@ from setuptools import setup, find_packages
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
-# Clone and install allegro and nequip package 
-subprocess.run(["git", "clone", "--depth", "1", "https://github.com/mir-group/allegro.git"])
-os.chdir("allegro")
-subprocess.run(["pip", "install", "."])
-os.chdir("../")
-
-subprocess.run(["git", "clone", "-b", "masks", "https://github.com/mir-group/nequip.git"])
-os.chdir("nequip")
-subprocess.run(["pip", "install", "."])
-os.chdir("../")
-
 setup(
     name='abinitio_train',
     version='0.1.0',
@@ -29,3 +18,16 @@ setup(
         ],
     },
 )
+
+# Clone and install allegro and nequip package
+
+subprocess.run(["git", "clone", "-b", "masks", "https://github.com/mir-group/nequip.git"])
+os.chdir("nequip")
+subprocess.run(["pip", "install", "."])
+os.chdir("../")
+
+subprocess.run(["git", "clone", "--depth", "1", "https://github.com/mir-group/allegro.git"])
+os.chdir("allegro")
+subprocess.run(["pip", "install", "."])
+os.chdir("../")
+
