@@ -224,7 +224,7 @@ def main():
    
    if args.train and method == "allegro":
       dataset = data_dir+'/'+dataset
-      conf = sort(read(dataset), index = "-1")
+      conf = sort(read(dataset, index = "-1"))
       symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
