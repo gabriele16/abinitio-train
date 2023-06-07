@@ -295,20 +295,20 @@ ema_use_num_updates: true
 loss_coeffs:
   forces:
     - 1
+    - MSELoss
 {mask_hack}    - {{\"ignore_nan\": {ignore_nan_value}}}
   total_energy:
     - 1.
     - PerAtomMSELoss
 
 # optimizer
-optimizer_name: Adam
-optimizer_params:
-  amsgrad: false
-  betas: !!python/tuple
+optimizer_name: Adam # default optimizer is Adam
+optimizer_amsgrad: false
+optimizer_betas: !!python/tuple
   - 0.9
   - 0.999
-  eps: 1.0e-08
-  weight_decay: 0.
+optimizer_eps: 1.0e-08
+optimizer_weight_decay: 0
 
 metrics_components:
   - - forces                               # key
