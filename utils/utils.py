@@ -96,7 +96,7 @@ def MD_writer_xyz(
 
 def set_tags_frc_constr(ase_traj, dim = 0):
     for i in range(len(ase_traj)):
-        ase_traj[i].set_tags(ase_traj[i].get_forces()[:,dim] == 0.0)
+        ase_traj[i].set_tags(ase_traj[i].get_forces()[:,dim] != 0.0)
     return ase_traj
 
 def sort_xyz_file(input_file, output_file):
