@@ -232,6 +232,8 @@ def main():
               chemical_symbols=symbols_list, mask_labels = mask_labels)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(allegro_input)
+      print("*****************************")
+      print("Train an allegro model")
    elif args.train and method == "nequip":
       dataset = data_dir+'/'+dataset
       conf = sort(read(dataset))
@@ -242,6 +244,8 @@ def main():
               max_epochs = max_epochs_value, chemical_symbols=symbols_list, mask_labels = mask_labels)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(nequip_input)
+      print("*****************************")
+      print("Train a nequip model")
    elif args.train:
        raise ValueError("Error: Training is only supported for method 'nequip' or 'allegro.")
 
