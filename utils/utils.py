@@ -279,6 +279,7 @@ log_batch_freq: 10
 n_train: {n_train}
 n_val: {n_val}
 batch_size: 1
+validation_batch_size: 1
 
 max_epochs: {max_epochs}
 learning_rate: 0.004
