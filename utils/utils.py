@@ -756,7 +756,6 @@ def generate_cp2k_input_md(*args, **kwargs):
 @SET RESTART  {restart_cp2k}    
 &GLOBAL
   PROJECT {system_name}
-  RESFILE {system_name}
   RUN_TYPE MD
 &END GLOBAL
 &FORCE_EVAL
