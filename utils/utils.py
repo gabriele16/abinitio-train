@@ -282,7 +282,7 @@ batch_size: 1
 validation_batch_size: 1
 
 max_epochs: {max_epochs}
-learning_rate: 0.004
+learning_rate: 0.005
 train_val_split: random
 shuffle: true
 metrics_key: validation_loss
@@ -333,7 +333,15 @@ early_stopping_lower_bounds:
   LR: 1.0e-5
 
 early_stopping_patiences:
-  validation_loss: 25 
+  validation_loss: 50
+
+early_stopping_delta: # If delta is defined, a decrease smaller than delta will not be considered as a decrease
+  validation_loss: 0.005
+
+early_stopping_cumulative_delta: false # If True, the minimum value recorded will not be updated when the decrease is smaller than delta
+
+early_stopping_lower_bounds: # stop early if a metric value is lower than the bound
+  LR: 1.0e-5
 """
     return allegro_input
 
@@ -714,29 +722,41 @@ def generate_cp2k_input_md(*args, **kwargs):
     default_method_name = "NEQUIP"
     default_coord_file_name = "coords.xyz"
     default_n_steps = 1000
+    default_temperature = 300
     default_unit_coords = "angstrom"
     default_unit_energy = "Hartree"
     default_unit_forces = "Hartree*Bohr^-1"
+    default_restart_cp2k = False
 
     system_name = kwargs.get('system_name', default_system_name)
     model_name = kwargs.get('model_name', default_model_name)
     method_name = kwargs.get('method_name', default_method_name)
     coord_file_name = kwargs.get('coord_file_name', default_coord_file_name)
     n_steps = kwargs.get('n_steps', default_n_steps)
+    temperature = kwargs.get('temperature', default_temperature)    
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = ' '.join(f"{symbol}" for symbol in chemical_symbols)
 
-    cell_vals = kwargs.get('cell', [])
-    cell = ' '.join(f"{cell_value}" for cell_value in cell_vals)    
+    cell_vals_a = kwargs.get('cell_a', [])
+    cell_a = ' '.join(f"{cell_value}" for cell_value in cell_vals_a)    
+    cell_vals_b = kwargs.get('cell_b', [])
+    cell_b = ' '.join(f"{cell_value}" for cell_value in cell_vals_b)
+    cell_vals_c = kwargs.get('cell_c', [])
+    cell_c = ' '.join(f"{cell_value}" for cell_value in cell_vals_c)
+
+    restart_cp2k = kwargs.get('restart_cp2k', default_restart_cp2k)
+    restart_cp2k = int(restart_cp2k)
 
     unit_coords = kwargs.get('unit_coords', default_unit_coords)
     unit_forces = kwargs.get('unit_forces', default_unit_forces)
     unit_energy = kwargs.get('unit_energy', default_unit_energy)
     
     cp2k_input_md = f"""
+@SET RESTART  {restart_cp2k}    
 &GLOBAL
   PROJECT {system_name}
+  RESFILE {system_name}
   RUN_TYPE MD
 &END GLOBAL
 &FORCE_EVAL
@@ -761,7 +781,9 @@ def generate_cp2k_input_md(*args, **kwargs):
   &END MM
   &SUBSYS
     &CELL
-       ABC {cell}
+       A {cell_a}
+       B {cell_b}
+       C {cell_c}
 #      MULTIPLE_UNIT_CELL 2 2 2
     &END CELL
     &TOPOLOGY
@@ -781,14 +803,30 @@ def generate_cp2k_input_md(*args, **kwargs):
     ENSEMBLE NVT
     STEPS {n_steps}
     TIMESTEP 0.5
-    TEMPERATURE 300
+    TEMPERATURE {temperature}
     &THERMOSTAT
-      &CSVR
-        TIMECON 10
-      &END CSVR
-    &END
+   &NOSE
+      LENGTH 4
+      TIMECON 100.
+      MTS 2
+    &END NOSE
+    &END    
   &END MD
+ 
 &END MOTION
+
+@if ${{RESTART}} == 1
+&EXT_RESTART
+  RESTART_FILE_NAME ${{RESFILE}}-1.restart
+   RESTART_DEFAULT T
+   RESTART_COUNTERS T
+   RESTART_POS T
+   RESTART_VEL T
+   RESTART_CELL T
+   RESTART_THERMOSTAT T
+&END EXT_RESTART
+@endif
+
 """
     return cp2k_input_md
 

@@ -55,6 +55,12 @@ def parse_arguments():
    arg_parser.add_argument('--no-run_md',
                            dest='run_md',
                            action="store_false")
+   arg_parser.add_argument('--restart_cp2k',
+                           help="restart md with cp2k",
+                           action="store_true")
+   arg_parser.add_argument('--no-restart_cp2k',
+                           dest='restart_cp2k',
+                           action="store_false")   
    arg_parser.add_argument('--analysis',
                            help='perform analysis with mdanalysis',
                            action="store_true")
@@ -86,12 +92,24 @@ def parse_arguments():
                            required = False,
                            default = "None",
                            help="provide a CP2K configuration file in xyz or extxyz format")
-   arg_parser.add_argument('--cell',
+   arg_parser.add_argument('--cell_a',
                            required = False,
                            default = [None,None,None],
                            type=float,
                            nargs=3, 
-                           help='three floats containing the cell vectors in Angstrom')   
+                           help='three floats containing the A cell vector in Angstrom')   
+   arg_parser.add_argument('--cell_b',
+                           required = False,
+                           default = [None,None,None],
+                           type=float,
+                           nargs=3,
+                           help='three floats containing the B cell vector in Angstrom')
+   arg_parser.add_argument('--cell_c',
+                           required = False,
+                           default = [None,None,None],
+                           type=float,
+                           nargs=3,
+                           help='three floats containing the C cell vector in Angstrom')   
    arg_parser.add_argument('--system_name',
                            required = False,
                            default = "system_name",
@@ -127,7 +145,11 @@ def parse_arguments():
    arg_parser.add_argument('--n_steps',
                            required = False,
                            default = 1000,
-                           help="number of steps to run MD with CP2K")   
+                           help="number of steps to run MD with CP2K")  
+   arg_parser.add_argument('--temperature',
+                           required = False,
+                           default = 300,
+                           help="temperature of MD with CP2K")   
    arg_parser.add_argument('--n_train',
                            required = False,
                            default = 1000,
@@ -206,8 +228,12 @@ def main():
    max_epochs_value = args.max_epochs
    #cp2k options
    coord_file_name = args.cp2k_coord_file_name
-   cell_value = args.cell
+   cell_value_a = args.cell_a
+   cell_value_b = args.cell_b
+   cell_value_c = args.cell_c
    n_steps_value = args.n_steps
+   temperature_value = args.temperature
+   restart_cp2k_value = args.restart_cp2k
    model_name = args.model_name
    unit_energy = args.unit_energy
    unit_coords = args.unit_coords
@@ -292,8 +318,10 @@ def main():
           sort_xyz_file("temp.extxyz", f"cp2k_run/{coord_file_name}")
           subprocess.call("rm temp.extxyz", shell =True)
 
-          if None in cell_value:
-             cell_value = [conf.cell[i,i] for i in range(len(conf.cell))]
+          if None in cell_value_a:
+             cell_value_a = [conf.cell[0,i] for i in range(len(conf.cell))]
+             cell_value_b = [conf.cell[1,i] for i in range(len(conf.cell))]
+             cell_value_c = [conf.cell[2,i] for i in range(len(conf.cell))]
 
        if ".xyz" in coord_file_name:
 
@@ -308,7 +336,8 @@ def main():
           subprocess.call("rm temp.extxyz", shell =True)
 
        cp2k_input_md = generate_cp2k_input_md(system_name=system_name, coord_file_name = coord_file_name, method_name = args.method.upper(),
-                                             model_name  = model_name, n_steps = n_steps_value, cell = cell_value, 
+                                             model_name  = model_name, n_steps = n_steps_value, cell_a = cell_value_a, cell_b = cell_value_b,
+                                             cell_c = cell_value_c, temperature = temperature_value, restart_cp2k = restart_cp2k_value,
                                              unit_coords = unit_coords, unit_energy = unit_energy, unit_forces = unit_forces, 
                                              chemical_symbols=symbols_list)
        with open("cp2k_run/neq_alle_md.inp", "w") as f:
