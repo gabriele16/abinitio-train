@@ -37,11 +37,11 @@ def parse_arguments():
                            action="store_true")
    arg_parser.add_argument('--no-deploy', dest='deploy',
                            action="store_false")   
-   arg_parser.add_argument('--data_load',
-                           help='load data',
+   arg_parser.add_argument('--data_process',
+                           help='preprocess data',
                            action="store_true")
-   arg_parser.add_argument('--no-data_load',
-                           dest='data_load',
+   arg_parser.add_argument('--no-data_process',
+                           dest='data_prprocess',
                            action="store_false")
    arg_parser.add_argument('--mask_labels',
                            help='mask labels',
@@ -110,6 +110,9 @@ def parse_arguments():
                            type=float,
                            nargs=3,
                            help='three floats containing the C cell vector in Angstrom')   
+   arg_parser.add_argument('--slice_traj',
+                           default = ":",
+                           help="slice of trajectory when processing the positions and forces, use same as ase")
    arg_parser.add_argument('--system_name',
                            required = False,
                            default = "system_name",
@@ -231,6 +234,7 @@ def main():
    cell_value_a = args.cell_a
    cell_value_b = args.cell_b
    cell_value_c = args.cell_c
+   slice_traj = args.slice_traj
    n_steps_value = args.n_steps
    temperature_value = args.temperature
    restart_cp2k_value = args.restart_cp2k
@@ -247,6 +251,22 @@ def main():
      torch.cuda.manual_seed(0)
    else:
      torch.manual_seed(0)
+
+   if args.data_process:
+
+       positions = data_dir + '/' + data_pos
+       forces = data_dir + '/' + data_frc
+
+       file_exists(positions)
+       file_exists(forces)
+
+       cell_vec_a = [float(c) for c in cell_value_a ]
+       cell_vec_b = [float(c) for c in cell_value_b ]
+       cell_vec_c = [float(c) for c in cell_value_c ]
+       cell_mat = [cell_vec_a] + [cell_vec_b] + [cell_vec_c]
+
+       combine_trajectory( positions, forces, data_dir+'/'+dataset, cell_mat, 
+                           slice_traj = slice_traj, mask_labels = mask_labels, dim = 0, sort_coords = True)
    
    if args.train and method == "allegro":
       dataset = data_dir+'/'+dataset

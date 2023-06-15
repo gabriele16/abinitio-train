@@ -7,6 +7,13 @@ import textwrap
 from ase.io import read, write
 import ase.data
 
+
+def file_exists(file_path):
+    if os.path.exists(file_path):
+        return True
+    else:
+        raise FileNotFoundError(f"File not found: {file_path}")
+
 def MD_reader_xyz(f, data_dir, no_skip=0):
     filename = os.path.join(data_dir, f)
     fo = open(filename, "r")
@@ -40,18 +47,29 @@ def Energy_reader_xyz(f, data_dir, no_skip = 0):
     filename = os.path.join(data_dir, f)
     with open(filename, "r") as fo:
         file_contents = fo.read()
-
     pattern = r"E = ([^\n]*)"
     matches = re.findall(pattern, file_contents)
-
     if no_skip == 0:
-
       ener = [float(en) for en in matches]
     else:
-      
       ener = [float(en) for en in matches[::no_skip]]
-
     return ener
+
+def combine_trajectory(coordinates_file, forces_file, output_file, cell, slice_traj = ":", mask_labels = False, dim = 0, sort_coords = False):
+    coordinates = read(coordinates_file, format='xyz', index=slice_traj)  # Read all frames
+    forces = read(forces_file, format='xyz', index=slice_traj)  # Read all frames
+    combined_frames = []  # Store the combined frames
+    energies = Energy_reader_xyz(coordinates_file, "./")
+    for i, (coords, force) in enumerate(zip(coordinates, forces)):
+        coords.info['energy'] = float(energies[i])
+        coords.set_cell(cell)
+        coords.set_array('forces', force.positions)  # Add forces to the copied atoms
+        if mask_labels:
+           coords.set_tags(force.positions[:,dim] != 0.0)        
+        if sort_coords:
+           coords = sort(coords)
+        combined_frames.append(coords)
+    write(output_file, combined_frames, format='extxyz')
 
 def MD_writer_xyz(
     positions, forces, cell_vec_abc, energies, data_dir, f, conv_frc=1.0, conv_ener=1.0):
