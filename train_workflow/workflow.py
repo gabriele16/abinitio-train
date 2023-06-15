@@ -254,9 +254,10 @@ def main():
 
    if args.data_process:
 
+       print("*****************************")
+       print("Processing positions and forces files")     
        positions = data_dir + '/' + data_pos
        forces = data_dir + '/' + data_frc
-
        file_exists(positions)
        file_exists(forces)
 
