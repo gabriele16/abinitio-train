@@ -56,20 +56,26 @@ def Energy_reader_xyz(f, data_dir, no_skip = 0):
     return ener
 
 def combine_trajectory(coordinates_file, forces_file, output_file, cell, slice_traj = ":", mask_labels = False, dim = 0, sort_coords = False):
-    coordinates = read(coordinates_file, format='xyz', index=slice_traj)  # Read all frames
-    forces = read(forces_file, format='xyz', index=slice_traj)  # Read all frames
-    combined_frames = []  # Store the combined frames
-    energies = Energy_reader_xyz(coordinates_file, "./")
+    print(slice_traj)
+    coordinates = read(coordinates_file, format='xyz', index=slice_traj, parallel = False)  # Read all frames
+    print("Reading of Coordinates complete")
+    forces = read(forces_file, format='xyz', index=slice_traj, parallel = False)  # Read all frames
+    print("Reading of Forces complete")
+
+    slice_int = int(re.findall(r'\d+',slice_traj)[0])
+    energies = Energy_reader_xyz(coordinates_file, "./", no_skip = slice_int)
+
     for i, (coords, force) in enumerate(zip(coordinates, forces)):
-        coords.info['energy'] = float(energies[i])
+        print(f"processing frame {i}")
+        coords.info['energy'] = energies[i]
         coords.set_cell(cell)
         coords.set_array('forces', force.positions)  # Add forces to the copied atoms
         if mask_labels:
            coords.set_tags(force.positions[:,dim] != 0.0)        
         if sort_coords:
            coords = sort(coords)
-        combined_frames.append(coords)
-    write(output_file, combined_frames, format='extxyz')
+#        combined_frames.append(coords)
+        write(output_file, coords, format='extxyz', append = True)
 
 def MD_writer_xyz(
     positions, forces, cell_vec_abc, energies, data_dir, f, conv_frc=1.0, conv_ener=1.0):
