@@ -835,7 +835,33 @@ def generate_cp2k_input_md(*args, **kwargs):
     &END NOSE
     &END    
   &END MD
- 
+
+    &PRINT
+      &FORCES
+       UNIT eV*angstrom^-1
+        &EACH
+          MD 1
+        &END
+      &END
+
+      &TRAJECTORY
+        &EACH
+          MD 1
+        &END
+      &END
+
+      &RESTART
+        &EACH
+          MD 100
+        &END
+      &END
+      &RESTART_HISTORY
+        &EACH
+          MD 1000
+        &END
+      &END
+    &END
+
 &END MOTION
 
 @if ${{RESTART}} == 1
