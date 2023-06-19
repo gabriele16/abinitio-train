@@ -1,12 +1,13 @@
 import os
 import re
+import subprocess
 from ase.build import sort
 import numpy as np
 import site
 import textwrap
 from ase.io import read, write
 import ase.data
-
+import MDAnalysis as mda
 
 def file_exists(file_path):
     if os.path.exists(file_path):
@@ -42,40 +43,73 @@ def read_cell(f, data_dir):
     ).squeeze()
     return cell_vec_abc
 
+def read_n_atoms_xyz(positions_filename):
+    with open(positions_filename, "r") as f:
+       first_line = f.readline().strip()
+       match = re.match(r"(\d+)", first_line)
+       if match:
+           num_atoms = int(match.group(1))
+       else:
+           num_atoms = 0
+    return num_atoms
 
-def Energy_reader_xyz(f, data_dir, no_skip = 0):
+def extract_first_frame_xyz(positions_filename, natoms, output_filename):
+
+    command = f"head -n $(expr {natoms} + 2) {positions_filename} > {output_filename}"
+    subprocess.run(command, shell=True)
+
+def Energy_reader_cp2k_xyz(f, data_dir, no_skip=0):
     filename = os.path.join(data_dir, f)
-    with open(filename, "r") as fo:
-        file_contents = fo.read()
-    pattern = r"E = ([^\n]*)"
-    matches = re.findall(pattern, file_contents)
+    grep_command = f"grep -Po '(?<=E = ).*' {filename}"
+    output = subprocess.check_output(grep_command, shell=True, text=True)
+    matches = output.splitlines()
     if no_skip == 0:
-      ener = [float(en) for en in matches]
+        ener = [float(en) for en in matches]
     else:
-      ener = [float(en) for en in matches[::no_skip]]
+        ener = [float(en) for en in matches[::no_skip]]
     return ener
 
-def combine_trajectory(coordinates_file, forces_file, output_file, cell, slice_traj = ":", mask_labels = False, dim = 0, sort_coords = False):
+
+def combine_trajectory(coordinates_file, forces_file, output_file, cell, interval = 1, mask_labels = False, dim = 0, sort_coords = False):
     print(slice_traj)
-    coordinates = read(coordinates_file, format='xyz', index=slice_traj, parallel = False)  # Read all frames
-    print("Reading of Coordinates complete")
-    forces = read(forces_file, format='xyz', index=slice_traj, parallel = False)  # Read all frames
-    print("Reading of Forces complete")
 
-    slice_int = int(re.findall(r'\d+',slice_traj)[0])
-    energies = Energy_reader_xyz(coordinates_file, "./", no_skip = slice_int)
+    coordinates = mda.coordinates.XYZ.XYZReader(coordinates_file)
+    topology_coordinates = mda.topology.XYZParser.XYZParser(coordinates_file)
+    forces = mda.coordinates.XYZ.XYZReader(forces_file)
+    topology_forces = mda.topology.XYZParser.XYZParser(forces_file)    
 
-    for i, (coords, force) in enumerate(zip(coordinates, forces)):
+    cell_box = mda.lib.mdamath.triclinic_box(cell[0,:], cell[1,:], cell[2, :])
+
+    print("after mda topology and coordinates")
+
+    coordinates_universe = mda.Universe(coordinates_file, topology_format = "XYZ", dt = 1.0)
+    forces_universe = mda.Universe(forces_file, topology_format = "XYZ", dt = 1.0)
+
+    print("after mda universe")
+
+    coordinates_universe.dimensions = cell_box
+    forces_universe.dimensions = cell_box
+    natoms = read_n_atoms_xyz(coordinates_file)
+    extract_first_frame_xyz(coordinates_file, natoms, "temp_pos.xyz")
+
+    coordinates_ase = read("temp_pos.xyz", format='xyz', index=0, parallel = False)  # Read all frames
+    forces_ase = read("temp_pos.xyz", format='xyz', index=0, parallel = False)  # Read all frames
+    os.remove("temp_pos.xyz")
+    energies = Energy_reader_cp2k_xyz(coordinates_file, "./", no_skip = interval)
+
+    print("Entering coordinates and forces loop")
+
+    for i, (coords, force) in enumerate(zip(coordinates_universe.trajectory[::slice_traj], forces_universe.trajectory[::slice_traj])):
         print(f"processing frame {i}")
-        coords.info['energy'] = energies[i]
-        coords.set_cell(cell)
-        coords.set_array('forces', force.positions)  # Add forces to the copied atoms
+        coordinates_ase.info['energy'] = energies[i]
+        coordinates_ase.set_cell(cell)
+        coordinates_ase.set_array('forces', force.positions)  # Add forces to the copied atoms
+        coordinates_ase.set_positions(coords.positions)
         if mask_labels:
            coords.set_tags(force.positions[:,dim] != 0.0)        
         if sort_coords:
            coords = sort(coords)
-#        combined_frames.append(coords)
-        write(output_file, coords, format='extxyz', append = True)
+        write(output_file, coordinates_ase, format='extxyz', append = True)
 
 def MD_writer_xyz(
     positions, forces, cell_vec_abc, energies, data_dir, f, conv_frc=1.0, conv_ener=1.0):
