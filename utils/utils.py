@@ -8,6 +8,8 @@ import textwrap
 from ase.io import read, write
 import ase.data
 import MDAnalysis as mda
+import itertools
+
 
 def file_exists(file_path):
     if os.path.exists(file_path):
@@ -71,8 +73,8 @@ def Energy_reader_cp2k_xyz(f, data_dir, no_skip=0):
 
 
 def combine_trajectory(coordinates_file, forces_file, output_file, cell, interval = 1, mask_labels = False, dim = 0, sort_coords = False):
-    print(slice_traj)
 
+    print("enter combine_trajectory")
     coordinates = mda.coordinates.XYZ.XYZReader(coordinates_file)
     topology_coordinates = mda.topology.XYZParser.XYZParser(coordinates_file)
     forces = mda.coordinates.XYZ.XYZReader(forces_file)
@@ -92,23 +94,26 @@ def combine_trajectory(coordinates_file, forces_file, output_file, cell, interva
     natoms = read_n_atoms_xyz(coordinates_file)
     extract_first_frame_xyz(coordinates_file, natoms, "temp_pos.xyz")
 
-    coordinates_ase = read("temp_pos.xyz", format='xyz', index=0, parallel = False)  # Read all frames
-    forces_ase = read("temp_pos.xyz", format='xyz', index=0, parallel = False)  # Read all frames
+    coordinates_ase = read("temp_pos.xyz", format='xyz', index=0, parallel = False)  # Read first frame
+    forces_ase = read("temp_pos.xyz", format='xyz', index=0, parallel = False)  # Read first frame
     os.remove("temp_pos.xyz")
+
+    print("after ase reading first frame")
+
     energies = Energy_reader_cp2k_xyz(coordinates_file, "./", no_skip = interval)
 
     print("Entering coordinates and forces loop")
 
-    for i, (coords, force) in enumerate(zip(coordinates_universe.trajectory[::slice_traj], forces_universe.trajectory[::slice_traj])):
+    for i, (coords, force) in enumerate(itertools.zip_longest(coordinates_universe.trajectory[::interval], forces_universe.trajectory[::interval])):
         print(f"processing frame {i}")
         coordinates_ase.info['energy'] = energies[i]
         coordinates_ase.set_cell(cell)
         coordinates_ase.set_array('forces', force.positions)  # Add forces to the copied atoms
         coordinates_ase.set_positions(coords.positions)
         if mask_labels:
-           coords.set_tags(force.positions[:,dim] != 0.0)        
+           coordinates_ase.set_tags(force.positions[:,dim] != 0.0)        
         if sort_coords:
-           coords = sort(coords)
+           coordinates_ase = sort(coordinates_ase)
         write(output_file, coordinates_ase, format='extxyz', append = True)
 
 def MD_writer_xyz(
