@@ -273,7 +273,7 @@ def main():
    if args.train and method == "allegro":
       dataset = data_dir+'/'+dataset
       conf = sort(read(dataset, index = "-1"))
-      symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
+      symbols_list = list(set(conf.get_chemical_symbols()))
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value,
@@ -285,7 +285,7 @@ def main():
    elif args.train and method == "nequip":
       dataset = data_dir+'/'+dataset
       conf = sort(read(dataset))
-      symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
+      symbols_list = list(set(conf.get_chemical_symbols()))
       nequip_input = generate_nequip_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, num_features = num_features_value, n_train = n_train_value, n_val = n_val_value,
@@ -333,7 +333,7 @@ def main():
 
           conf = sort(read(coord_file_name, index = '-1'))
           write("temp.extxyz", conf)
-          symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
+          symbols_list = list(set(conf.get_chemical_symbols()))
           atomic_nums = [ase.data.atomic_numbers[sym] for sym in symbols_list]
           symbols_list = [e[1] for e in sorted(zip(atomic_nums, symbols_list))]
 
@@ -350,7 +350,7 @@ def main():
           conf = sort(read(coord_file_name, index = '-1'))
 
           write("temp.extxyz", conf)
-          symbols_list = re.findall(r'[a-zA-Z]', str(conf.symbols))
+          symbols_list = list(set(conf.get_chemical_symbols()))
           atomic_nums = [ase.data.atomic_numbers[sym] for sym in symbols_list]
           symbols_list = [e[1] for e in sorted(zip(atomic_nums, symbols_list))]
 
