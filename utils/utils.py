@@ -72,7 +72,7 @@ def Energy_reader_cp2k_xyz(f, data_dir, no_skip=0):
     return ener
 
 
-def combine_trajectory(coordinates_file, forces_file, output_file, cell, interval = 1, mask_labels = False, dim = 0, sort_coords = False):
+def combine_trajectory(coordinates_file, forces_file, output_file, cell, interval = 1, mask_labels = False, dim = 0):
 
     print("enter combine_trajectory")
     coordinates = mda.coordinates.XYZ.XYZReader(coordinates_file)
@@ -104,6 +104,9 @@ def combine_trajectory(coordinates_file, forces_file, output_file, cell, interva
 
     print("Entering coordinates and forces loop")
 
+    if os.path.isfile(output_file):
+        os.remove(output_file)
+
     for i, (coords, force) in enumerate(itertools.zip_longest(coordinates_universe.trajectory[::interval], forces_universe.trajectory[::interval])):
         print(f"processing frame {i}")
         coordinates_ase.info['energy'] = energies[i]
@@ -112,8 +115,6 @@ def combine_trajectory(coordinates_file, forces_file, output_file, cell, interva
         coordinates_ase.set_positions(coords.positions)
         if mask_labels:
            coordinates_ase.set_tags(force.positions[:,dim] != 0.0)        
-        if sort_coords:
-           coordinates_ase = sort(coordinates_ase)
         write(output_file, coordinates_ase, format='extxyz', append = True)
 
 def MD_writer_xyz(

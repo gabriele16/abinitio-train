@@ -268,7 +268,7 @@ def main():
        cell_mat = np.concatenate( (cell_vec_a, cell_vec_b, cell_vec_c), axis = 0).reshape(3,3)
 
        combine_trajectory( positions, forces, data_dir+'/'+dataset, cell_mat, 
-                           interval = interval, mask_labels = mask_labels, dim = 0, sort_coords = True)
+                           interval = interval, mask_labels = mask_labels, dim = 0)
    
    if args.train and method == "allegro":
       dataset = data_dir+'/'+dataset
