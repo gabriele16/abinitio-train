@@ -220,12 +220,15 @@ def generate_allegro_input(*args, **kwargs):
     default_n_val = 100
     default_max_epochs = 100
     default_mask_labels = False
+    default_forces_loss = "MSELoss"
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
     resultsdir = kwargs.get('resultsdir', default_resultsdir)
     system_name = kwargs.get('system_name', default_system_name)
     default_dtype = kwargs.get('default_dtype', default_default_dtype)    
+    forces_loss = kwargs.get('forces_loss', default_forces_loss)
+    
     l_max = kwargs.get('l_max', default_l_max)
     num_layers = kwargs.get('num_layers', default_num_layers)   
     dataset_file_name = kwargs.get('dataset_file_name', default_dataset_file_name)
@@ -360,7 +363,7 @@ ema_use_num_updates: true
 loss_coeffs:
   forces:
     - 1
-    - MSELoss
+    - {forces_loss}
 {mask_hack}    - {{\"ignore_nan\": {ignore_nan_value}}}
   total_energy:
     - 1.
@@ -425,11 +428,14 @@ def generate_nequip_input(*args, **kwargs):
     default_n_val = 100
     default_max_epochs = 100
     default_mask_labels = False
+    default_forces_loss = "MSELoss"    
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
     resultsdir = kwargs.get('traindir', default_resultsdir)
     system_name = kwargs.get('system_name', default_system_name)
+    forces_loss = kwargs.get('forces_loss', default_forces_loss)
+    
     default_dtype = kwargs.get('default_dtype', default_default_dtype)
     l_max = kwargs.get('l_max', default_l_max)
     num_layers = kwargs.get('num_layers', default_num_layers)
@@ -621,7 +627,7 @@ early_stopping_upper_bounds: # stop early if a metric value is higher than the b
 loss_coeffs: # different weights to use in a weighted loss functions
   forces:
     - 1 # if using PerAtomMSELoss, a default weight of 1:1 on each should work well
-    - MSELoss
+    - {forces_loss}
 {mask_hack}    - {{\"ignore_nan\": {ignore_nan_value}}}
   total_energy:
     - 1
