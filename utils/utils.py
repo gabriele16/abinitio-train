@@ -221,6 +221,7 @@ def generate_allegro_input(*args, **kwargs):
     default_max_epochs = 100
     default_mask_labels = False
     default_forces_loss = "MSELoss"
+    default_batch_size = 1
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -230,6 +231,7 @@ def generate_allegro_input(*args, **kwargs):
     forces_loss = kwargs.get('forces_loss', default_forces_loss)
     
     l_max = kwargs.get('l_max', default_l_max)
+    batch_size = kwargs.get('batch_size', default_batch_size)    
     num_layers = kwargs.get('num_layers', default_num_layers)   
     dataset_file_name = kwargs.get('dataset_file_name', default_dataset_file_name)
     n_train = kwargs.get('n_train', default_n_train)
@@ -345,8 +347,8 @@ log_batch_freq: 10
 # training
 n_train: {n_train}
 n_val: {n_val}
-batch_size: 1
-validation_batch_size: 1
+batch_size: {batch_size}
+validation_batch_size: {batch_size}
 
 max_epochs: {max_epochs}
 learning_rate: 0.005
@@ -429,12 +431,14 @@ def generate_nequip_input(*args, **kwargs):
     default_max_epochs = 100
     default_mask_labels = False
     default_forces_loss = "MSELoss"    
+    default_batch_size = 1
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
     resultsdir = kwargs.get('traindir', default_resultsdir)
     system_name = kwargs.get('system_name', default_system_name)
     forces_loss = kwargs.get('forces_loss', default_forces_loss)
+    batch_size = kwargs.get('batch_size', default_batch_size)
     
     default_dtype = kwargs.get('default_dtype', default_default_dtype)
     l_max = kwargs.get('l_max', default_l_max)
@@ -586,7 +590,7 @@ ase_args: # any arguments needed by ase.io.read
 #   log_graph: true
 
 verbose: info # the same as python logging, e.g. warning, info, debug, error. case insensitive
-log_batch_freq: 1 # batch frequency, how often to print training errors withinin the same epoch
+log_batch_freq: 10 # batch frequency, how often to print training errors withinin the same epoch
 log_epoch_freq: 1 # epoch frequency, how often to print
 save_checkpoint_freq: -1 # frequency to save the intermediate checkpoint. no saving of intermediate checkpoints when the value is not positive.
 save_ema_checkpoint_freq: -1 # frequency to save the intermediate ema checkpoint. no saving of intermediate checkpoints when the value is not positive.
@@ -595,8 +599,8 @@ save_ema_checkpoint_freq: -1 # frequency to save the intermediate ema checkpoint
 n_train: {n_train} # number of training data
 n_val: {n_val} # number of validation data
 learning_rate: 0.005 # learning rate, we found values between 0.01 and 0.005 to work best - this is often one of the most important hyperparameters to tune
-batch_size: 1 # batch size, we found it important to keep this small for most applications including forces (1-5); for energy-only training, higher batch sizes work better
-validation_batch_size: 1 # batch size for evaluating the model during validation. This does not affect the training results, but using the highest value possible (<=n_val) without running out of memory will speed up your training.
+batch_size: {batch_size} # batch size, we found it important to keep this small for most applications including forces (1-5); for energy-only training, higher batch sizes work better
+validation_batch_size: {batch_size} # batch size for evaluating the model during validation. This does not affect the training results, but using the highest value possible (<=n_val) without running out of memory will speed up your training.
 max_epochs: {max_epochs} # stop training after _ number of epochs, we set a very large number here, it won't take this long in practice and we will use early stopping instead
 train_val_split: random # can be random or sequential. if sequential, first n_train elements are training, next n_val are val, else random, usually random is the right choice
 shuffle: true # If true, the data loader will shuffle the data, usually a good idea
