@@ -418,8 +418,9 @@ def main():
          select_j = coordinates_universe.select_atoms(f'name {el_j}')
 
          print(f"Compute rdf for pair {el_i} {el_j}")       
-   
-         rdf_ij = rdf.InterRDF(select_i, select_j, range=(0.00001, np.min(cell_box[:3]) /2.))
+
+         rdf_ij = rdf.InterRDF(select_i, select_j, nbins = int(np.rint( np.min(cell_box[:3]) /2./0.05 )),
+                 range=(0.00001, np.min(cell_box[:3]) /2.))
 
          if (interval == 0 or interval == 1):
             rdf_ij.run()
