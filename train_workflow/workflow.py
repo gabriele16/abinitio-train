@@ -169,7 +169,11 @@ def parse_arguments():
    arg_parser.add_argument('--batch_size',
                            required = False,
                            default = 1,
-                           help="batch size")   
+                           help="batch size")  
+   arg_parser.add_argument('--validation_loss_delta',
+                           required = False,
+                           default = 0.005,
+                           help="threshold on the residual of the validation loss beween epochs for early stopping")   
    arg_parser.add_argument('--default_dtype',
                            required = False,
                            default = "float64",
@@ -237,7 +241,8 @@ def main():
    default_dtype_value = args.default_dtype
    #training options
    n_train_value = args.n_train
-   batch_size_value = args.batch_size   
+   batch_size_value = args.batch_size
+   validation_loss_delta = args.validation_loss_delta
    n_val_value = args.n_val
    max_epochs_value = args.max_epochs
    #cp2k options
@@ -287,7 +292,8 @@ def main():
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value,
-              batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss)
+              batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss,
+              validation_loss_delta = validation_loss_delta)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(allegro_input)
       print("*****************************")
@@ -300,7 +306,7 @@ def main():
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, num_features = num_features_value, n_train = n_train_value, n_val = n_val_value,
               max_epochs = max_epochs_value, batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels,
-              forces_loss = forces_loss)
+              forces_loss = forces_loss, validation_loss_delta = validation_loss_delta)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(nequip_input)
       print("*****************************")

@@ -230,6 +230,7 @@ def generate_allegro_input(*args, **kwargs):
     default_mask_labels = False
     default_forces_loss = "MSELoss"
     default_batch_size = 1
+    default_validation_loss_delta = 0.005
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -245,6 +246,7 @@ def generate_allegro_input(*args, **kwargs):
     n_train = kwargs.get('n_train', default_n_train)
     n_val = kwargs.get('n_val', default_n_val)
     max_epochs = kwargs.get('max_epochs', default_max_epochs)
+    validation_loss_delta = kwargs.get('validation_loss_delta', default_validation_loss_delta)
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = textwrap.indent('\n'.join(f"- {symbol}" for symbol in chemical_symbols), '  ')
@@ -413,7 +415,7 @@ early_stopping_patiences:
   validation_loss: 50
 
 early_stopping_delta: # If delta is defined, a decrease smaller than delta will not be considered as a decrease
-  validation_loss: 0.005
+  validation_loss: {validation_loss_delta}
 
 early_stopping_cumulative_delta: false # If True, the minimum value recorded will not be updated when the decrease is smaller than delta
 
@@ -440,6 +442,7 @@ def generate_nequip_input(*args, **kwargs):
     default_mask_labels = False
     default_forces_loss = "MSELoss"    
     default_batch_size = 1
+    default_validation_loss_delta = 0.005
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -456,6 +459,7 @@ def generate_nequip_input(*args, **kwargs):
     n_train = kwargs.get('n_train', default_n_train)
     n_val = kwargs.get('n_val', default_n_val)
     max_epochs = kwargs.get('max_epochs', default_max_epochs)
+    validation_loss_delta = kwargs.get('validation_loss_delta', default_validation_loss_delta)
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = textwrap.indent('\n'.join(f"- {symbol}" for symbol in chemical_symbols), '  ')
@@ -625,7 +629,7 @@ early_stopping_patiences: # stop early if a metric value stopped decreasing for 
   validation_loss: 50
 
 early_stopping_delta: # If delta is defined, a decrease smaller than delta will not be considered as a decrease
-  validation_loss: 0.005
+  validation_loss: {validation_loss_delta}
 
 early_stopping_cumulative_delta: false # If True, the minimum value recorded will not be updated when the decrease is smaller than delta
 
