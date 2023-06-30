@@ -114,7 +114,8 @@ def combine_trajectory(coordinates_file, forces_file, output_file, cell, interva
         coordinates_ase.set_array('forces', force.positions)  # Add forces to the copied atoms
         coordinates_ase.set_positions(coords.positions)
         if mask_labels:
-           coordinates_ase.set_tags(force.positions[:,dim] != 0.0)        
+           coordinates_ase.set_tags(force.positions[:,dim] != 0.0)       
+        coordinates_ase = sort(coordinates_ase)
         write(output_file, coordinates_ase, format='extxyz', append = True)
 
 def MD_writer_xyz(
