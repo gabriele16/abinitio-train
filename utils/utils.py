@@ -36,6 +36,13 @@ def MD_reader_xyz(f, data_dir, no_skip=0):
         xyz.append(temp[:, :])
     return natoms_str, np.array(xyz), np.array(energies)
 
+def get_pairs(lst):
+    pairs = []
+    for i in range(len(lst)):
+        for j in range(i, len(lst)):
+            pairs.append((lst[i], lst[j]))
+    return pairs
+
 def read_cell(f, data_dir):
     filename = os.path.join(data_dir, f)
     fo = open(filename, "r")

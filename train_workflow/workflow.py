@@ -376,11 +376,66 @@ def main():
        with open("cp2k_run/neq_alle_md.inp", "w") as f:
           f.write(cp2k_input_md)
        
-       subprocess.call(f"cd cp2k_run/ && {cp2k_exe} -i neq_alle_md.inp > out.out &",shell=True)
+       subprocess.call(f"cd cp2k_run/ && {cp2k_exe} -i neq_alle_md.inp > out.out",shell=True)
        print("MD completed")
        print("##################")
-       
-       
+
+   if args.analysis:
+
+       print("##################")
+       print("Perform analysis of the rdfs")
+
+       cell_vec_a = np.array([float(c) for c in cell_value_a ])
+       cell_vec_b = np.array([float(c) for c in cell_value_b ])
+       cell_vec_c = np.array([float(c) for c in cell_value_c ])
+       cell_mat = np.concatenate( (cell_vec_a, cell_vec_b, cell_vec_c), axis = 0).reshape(3,3)
+
+       positions = data_dir + '/' + data_pos
+
+       coordinates = mda.coordinates.XYZ.XYZReader(positions)
+       topology_coordinates = mda.topology.XYZParser.XYZParser(positions)
+       cell_box = mda.lib.mdamath.triclinic_box(cell_vec_a, cell_vec_b, cell_vec_c)
+       coordinates_universe = mda.Universe(positions, topology_format = "XYZ", dt = .001)
+  
+       coordinates_universe.dimensions = cell_box
+
+       conf_ase = sort(read(positions, index = '-1'))
+       symbols_list = list(set(conf_ase.get_chemical_symbols()))
+       atomic_nums = [ase.data.atomic_numbers[sym] for sym in symbols_list]
+       symbols_list = [e[1] for e in sorted(zip(atomic_nums, symbols_list))]
+
+       element_pairs = get_pairs(symbols_list)
+
+       for el_i, el_j in element_pairs:
+
+         select_i = coordinates_universe.select_atoms(f'name {el_i}')
+         select_j = coordinates_universe.select_atoms(f'name {el_j}')
+
+         print(f"Compute rdf for pair {el_i} {el_j}")       
+   
+         rdf_ij = rdf.InterRDF(select_i, select_j, range=(0.00001, np.min(cell_box[:3]) /2.))
+
+         if (interval == 0 or interval == 1):
+            rdf_ij.run()
+         else:
+            rdf_ij.run(step = interval) 
+   
+         # Plot RDF
+         plt.plot(rdf_ij.bins, rdf_ij.rdf)
+         plt.xlabel('Radius (angstrom)')
+         plt.ylabel(f'g(r) {el_i}-{el_j}')
+     
+         # Save RDF data to a file
+         data_filename = f'rdf_data_{el_i}_{el_j}.dat'
+         np.savetxt(data_filename, np.column_stack((rdf_ij.bins, rdf_ij.rdf)), header='Radius (angstrom)\tg(r)')
+     
+         # Save plot as PNG file
+         plot_filename = f'rdf_plot_{el_i}_{el_j}.png'
+         plt.savefig(plot_filename)
+         
+         # Clear the plot for the next pair
+         plt.clf()         
+               
 if __name__ == "__main__":
    
    main()
