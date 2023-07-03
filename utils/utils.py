@@ -123,8 +123,8 @@ def combine_trajectory(coordinates_file, forces_file, output_file, cell, interva
         coordinates_ase.set_positions(coords.positions)
         if mask_labels:
            coordinates_ase.set_tags(force.positions[:,dim] != 0.0)       
-        coordinates_ase = sort(coordinates_ase)
-        write(output_file, coordinates_ase, format='extxyz', append = True)
+        coordinates_ase_sort = sort(coordinates_ase)
+        write(output_file, coordinates_ase_sort, format='extxyz', append = True)
 
 def MD_writer_xyz(
     positions, forces, cell_vec_abc, energies, data_dir, f, conv_frc=1.0, conv_ener=1.0):
