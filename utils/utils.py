@@ -118,6 +118,7 @@ def combine_trajectory(coordinates_file, forces_file, output_file, cell, interva
         print(f"processing frame {i}")
         coordinates_ase.info['energy'] = energies[i]
         coordinates_ase.set_cell(cell)
+        coordinates_ase.set_pbc([True, True, True])
         coordinates_ase.set_array('forces', force.positions)  # Add forces to the copied atoms
         coordinates_ase.set_positions(coords.positions)
         if mask_labels:
