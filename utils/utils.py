@@ -224,6 +224,7 @@ def generate_allegro_input(*args, **kwargs):
     default_default_dtype = "float64"
     default_l_max = 2
     default_num_layers = 2
+    default_num_features = 64    
     default_dataset_file_name = "dataset.extxyz"
     default_n_train = 1000
     default_n_val = 100
@@ -231,7 +232,8 @@ def generate_allegro_input(*args, **kwargs):
     default_mask_labels = False
     default_forces_loss = "MSELoss"
     default_batch_size = 1
-    default_validation_loss_delta = 0.005
+    default_validation_loss_delta = 0.002
+    default_hidden_layers_dim = [128, 256, 512, 1024]
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -242,7 +244,8 @@ def generate_allegro_input(*args, **kwargs):
     
     l_max = kwargs.get('l_max', default_l_max)
     batch_size = kwargs.get('batch_size', default_batch_size)    
-    num_layers = kwargs.get('num_layers', default_num_layers)   
+    num_layers = kwargs.get('num_layers', default_num_layers)  
+    num_features = kwargs.get('num_features', default_num_features)
     dataset_file_name = kwargs.get('dataset_file_name', default_dataset_file_name)
     n_train = kwargs.get('n_train', default_n_train)
     n_val = kwargs.get('n_val', default_n_val)
@@ -251,6 +254,8 @@ def generate_allegro_input(*args, **kwargs):
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = textwrap.indent('\n'.join(f"- {symbol}" for symbol in chemical_symbols), '  ')
+    hidden_layers_dim = kwargs.get('hidden_layers_dim', default_hidden_layers_dim)
+    hidden_layers_dim_str = '['+', '.join(f"{layer_size}" for layer_size in hidden_layers_dim)+']'
 
     mask_labels = kwargs.get('mask_labels', default_mask_labels)
     if mask_labels:
@@ -298,15 +303,21 @@ l_max: {l_max}
 parity: o3_full
 
 # Allegro layers:
+# number of tensor product layers, 1-3 usually best, more is more accurate but slower    
 num_layers: {num_layers}
-env_embed_multiplicity: 8
+# number of features, more is more accurate but slower, 1, 4, 8, 16, 64, 128 are good options to try depending on data set
+env_embed_multiplicity: {num_features}
 embed_initial_edge: true
 
-two_body_latent_mlp_latent_dimensions: [32, 64, 128]
+# hidden layer dimensions of the 2-body embedding MLP
+two_body_latent_mlp_latent_dimensions: {hidden_layers_dim_str}
 two_body_latent_mlp_nonlinearity: silu
 two_body_latent_mlp_initialization: uniform
 
-latent_mlp_latent_dimensions: [128]
+# hidden layer dimensions of the latent MLP
+# these MLPs are cheap if you have have large l/env_embed_multiplicity, so a good place to put model capacity if you can afford it
+# only if you are in the ultra-fast/scalable regime, make these smaller
+latent_mlp_latent_dimensions: [{hidden_layers_dim[-1]}, {hidden_layers_dim[-1]}, {hidden_layers_dim[-1]}]
 latent_mlp_nonlinearity: silu
 latent_mlp_initialization: uniform
 latent_resnet: true
@@ -318,7 +329,8 @@ env_embed_mlp_initialization: uniform
 # - end allegro layers -
 
 # Final MLP to go from Allegro latent space to edge energies:
-edge_eng_mlp_latent_dimensions: [32]
+# hidden layer dimensions of the per-edge energy final MLP
+edge_eng_mlp_latent_dimensions: [{hidden_layers_dim[0]}]
 edge_eng_mlp_nonlinearity: null
 edge_eng_mlp_initialization: uniform
 
@@ -329,15 +341,12 @@ key_mapping:
 
 # -- data --
 dataset: ase
-#dataset_file_name: /content/abinitio-train/datasets/wat_gra_bil_film/wat_pos_frc.extxyz                     # path to data set file
-#dataset_file_name: /content/abinitio-train/datasets/refined_water_gra/wat_bil_gra_FILM/wat_pos_frc.extxyz                     # path to data set file
 dataset_file_name: {dataset_file_name}
 
 ase_args:
   format: extxyz
 
 # A mapping of chemical species to type indexes is necessary if the dataset is provided with atomic numbers instead of type indexes.
-#chemical_symbol_to_type:
 chemical_symbols:
 {symbols}
 
@@ -434,7 +443,7 @@ def generate_nequip_input(*args, **kwargs):
     default_default_dtype = "float64"
     default_l_max = 2
     default_polynomial_cutoff_p = 48    
-    default_num_layers = 2
+    default_num_layers = 4
     default_num_features = 32
     default_dataset_file_name = "dataset.extxyz"
     default_n_train = 1000
@@ -443,7 +452,7 @@ def generate_nequip_input(*args, **kwargs):
     default_mask_labels = False
     default_forces_loss = "MSELoss"    
     default_batch_size = 1
-    default_validation_loss_delta = 0.005
+    default_validation_loss_delta = 0.002
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -560,19 +569,10 @@ key_mapping:
 chemical_symbols:
 {symbols}
 
-# Alternatively, you may explicitly specify which chemical species in the input will map to NequIP atom type 0, which to atom type 1, and so on.
-# Other than providing an explicit order for the NequIP atom types, this option behaves the same as `chemical_symbols`
-#chemical_symbol_to_type:
-#  C: 0
-#  H: 1
-#  O: 2
-
 # As an alternative option to npz, you can also pass data ase ASE Atoms-objects
 # This can often be easier to work with, simply make sure the ASE Atoms object
 # has a calculator for which atoms.get_potential_energy() and atoms.get_forces() are defined
 dataset: ase
-#dataset_file_name: ./abinitio-train/datasets/wat_gra_bil_film/wat_pos_frc.extxyz # need to be a format accepted by ase.io.read
-#dataset_file_name: /content/abinitio-train/datasets/refined_water_gra/wat_bil_gra_FILM/wat_pos_frc.extxyz                     # path to data set file
 dataset_file_name: {dataset_file_name}
 
 ase_args: # any arguments needed by ase.io.read
@@ -706,8 +706,11 @@ metrics_components:
 
 # optimizer, may be any optimizer defined in torch.optim
 # the name `optimizer_name`is case sensitive
+# IMPORTANT: for NequIP (not for Allegro), we find that in most cases AMSGrad strongly improves
+# out-of-distribution generalization over Adam. We highly recommed trying both AMSGrad (by setting
+# optimizer_amsgrad: true) and Adam (by setting optimizer_amsgrad: false)
 optimizer_name: Adam # default optimizer is Adam
-optimizer_amsgrad: false
+optimizer_amsgrad: true
 optimizer_betas: !!python/tuple
   - 0.9
   - 0.999

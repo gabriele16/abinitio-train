@@ -146,6 +146,10 @@ def parse_arguments():
                            required = False,
                            default = 32,
                            help="number of features")
+   arg_parser.add_argument('--hidden_layers_dim',
+                           required = False,
+                           default = [128, 256, 512, 1024],
+                           help="hidden layer dimensions of the 2-body embedding MLP for allegro")   
    arg_parser.add_argument('--max_epochs',
                            required = False,
                            default = 10000,
@@ -172,7 +176,7 @@ def parse_arguments():
                            help="batch size")  
    arg_parser.add_argument('--validation_loss_delta',
                            required = False,
-                           default = 0.005,
+                           default = 0.002,
                            help="threshold on the residual of the validation loss beween epochs for early stopping")   
    arg_parser.add_argument('--default_dtype',
                            required = False,
@@ -237,6 +241,7 @@ def main():
    polynomial_cutoff_p_value = args.polynomial_cutoff_p
    num_layers_value = args.num_layers
    num_features_value = args.num_features
+   hidden_layers_dim_value = args.hidden_layers_dim
    l_max_value = args.l_max
    default_dtype_value = args.default_dtype
    #training options
@@ -291,7 +296,8 @@ def main():
       symbols_list = list(set(conf.get_chemical_symbols()))
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
-              num_layers = num_layers_value, n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value,
+              num_layers = num_layers_value, num_features = num_features_value, hidden_layers_dim = hidden_layers_dim_value, 
+              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value,
               batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss,
               validation_loss_delta = validation_loss_delta)
       with open(f"{system_name}.yaml", "w") as f:
