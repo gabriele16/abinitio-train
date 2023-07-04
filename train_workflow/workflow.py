@@ -148,6 +148,8 @@ def parse_arguments():
                            help="number of features")
    arg_parser.add_argument('--hidden_layers_dim',
                            required = False,
+                           nargs = "+",
+                           type = int, 
                            default = [128, 256, 512, 1024],
                            help="hidden layer dimensions of the 2-body embedding MLP for allegro")   
    arg_parser.add_argument('--max_epochs',
@@ -327,7 +329,8 @@ def main():
    if args.train:
        print("##################")
        print("Train model")
-       subprocess.call("mv results results_bak", shell=True)
+       if os.path.isdir("results"):
+          subprocess.call("mv results results_bak", shell=True)
        subprocess.call(f"nequip-train {system_name}.yaml", shell=True)
        print("##################")
        print("Training complete")
@@ -344,7 +347,8 @@ def main():
    if args.run_md:
        print("##################")
        print("Run MD")
-       subprocess.call("mv cp2k_run cp2k_run_bak", shell=True)
+       if os.path.isdir("cp2k_run"):
+           subprocess.call("mv cp2k_run cp2k_run_bak", shell=True)
        subprocess.call("mkdir cp2k_run", shell=True)
        if args.deploy:
            model_name = f"{system_name}_deploy_{depl_time}.pth"
