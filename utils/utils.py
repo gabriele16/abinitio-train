@@ -234,6 +234,7 @@ def generate_allegro_input(*args, **kwargs):
     default_batch_size = 1
     default_validation_loss_delta = 0.002
     default_hidden_layers_dim = [128, 256, 512, 1024]
+    default_parity = "o3_full"
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -250,6 +251,8 @@ def generate_allegro_input(*args, **kwargs):
     n_train = kwargs.get('n_train', default_n_train)
     n_val = kwargs.get('n_val', default_n_val)
     max_epochs = kwargs.get('max_epochs', default_max_epochs)
+    parity = kwargs.get('parity', default_parity)
+    
     validation_loss_delta = kwargs.get('validation_loss_delta', default_validation_loss_delta)
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
@@ -300,7 +303,9 @@ PolynomialCutoff_p: {polynomial_cutoff_p}
 
 # symmetry
 l_max: {l_max}
-parity: o3_full
+# whether to include E(3)-symmetry / parity
+# allowed: o3_full, o3_restricted, so3
+parity: {parity}
 
 # Allegro layers:
 # number of tensor product layers, 1-3 usually best, more is more accurate but slower    
@@ -453,6 +458,7 @@ def generate_nequip_input(*args, **kwargs):
     default_forces_loss = "MSELoss"    
     default_batch_size = 1
     default_validation_loss_delta = 0.002
+    default_parity = "o3_full"
 
     cutoff = kwargs.get('cutoff', default_cutoff)
     polynomial_cutoff_p = kwargs.get('polynomial_cutoff_p', default_polynomial_cutoff_p)
@@ -460,6 +466,12 @@ def generate_nequip_input(*args, **kwargs):
     system_name = kwargs.get('system_name', default_system_name)
     forces_loss = kwargs.get('forces_loss', default_forces_loss)
     batch_size = kwargs.get('batch_size', default_batch_size)
+
+    parity = kwargs.get('parity', default_parity)
+    if parity == "o3_full" or "o3_restricted":
+        parity = "true"
+    elif parity == "so3":
+       parity = "false"
     
     default_dtype = kwargs.get('default_dtype', default_default_dtype)
     l_max = kwargs.get('l_max', default_l_max)
@@ -843,7 +855,8 @@ def generate_cp2k_input_md(*args, **kwargs):
     unit_energy = kwargs.get('unit_energy', default_unit_energy)
     
     cp2k_input_md = f"""
-@SET RESTART  {restart_cp2k}    
+@SET RESTART  {restart_cp2k}   
+@SET RESTART {system_name}
 &GLOBAL
   PROJECT {system_name}
   RUN_TYPE MD

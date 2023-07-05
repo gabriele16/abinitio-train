@@ -146,6 +146,11 @@ def parse_arguments():
                            required = False,
                            default = 32,
                            help="number of features")
+   arg_parser.add_argument('--parity',
+                           required = False,
+                           default = "o3_full",
+                           choices = ["o3_full", "o3_restricted", "so3"],
+                           help="which symmetry to use for parity, choose between o3_full, o3_restricted, so3")
    arg_parser.add_argument('--hidden_layers_dim',
                            required = False,
                            nargs = "+",
@@ -244,6 +249,7 @@ def main():
    num_layers_value = args.num_layers
    num_features_value = args.num_features
    hidden_layers_dim_value = args.hidden_layers_dim
+   parity_value = args.parity
    l_max_value = args.l_max
    default_dtype_value = args.default_dtype
    #training options
@@ -299,7 +305,7 @@ def main():
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, num_features = num_features_value, hidden_layers_dim = hidden_layers_dim_value, 
-              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value,
+              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value, parity = parity_value,
               batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss,
               validation_loss_delta = validation_loss_delta)
       with open(f"{system_name}.yaml", "w") as f:
@@ -312,9 +318,10 @@ def main():
       symbols_list = list(set(conf.get_chemical_symbols()))
       nequip_input = generate_nequip_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
-              num_layers = num_layers_value, num_features = num_features_value, n_train = n_train_value, n_val = n_val_value,
-              max_epochs = max_epochs_value, batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels,
-              forces_loss = forces_loss, validation_loss_delta = validation_loss_delta)
+              num_layers = num_layers_value, num_features = num_features_value, parity = parity_value, 
+              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value, batch_size = batch_size_value, 
+              chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss, 
+              validation_loss_delta = validation_loss_delta)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(nequip_input)
       print("*****************************")
