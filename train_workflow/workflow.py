@@ -336,8 +336,10 @@ def main():
    if args.train:
        print("##################")
        print("Train model")
-       if os.path.isdir("results"):
-          subprocess.call("mv results results_bak", shell=True)
+       if os.path.isdir(f"{resultsdir}"):
+          if os.path.isdir(f"{resultsdir}_bak"): 
+              subprocess.call(f"rm -r {resultsdir}_bak", shell=True)
+          subprocess.call(f"mv {resultsdir} {resultsdir}_bak", shell=True)
        subprocess.call(f"nequip-train {system_name}.yaml", shell=True)
        print("##################")
        print("Training complete")
@@ -355,6 +357,8 @@ def main():
        print("##################")
        print("Run MD")
        if os.path.isdir("cp2k_run"):
+           if os.path.isdir("cp2k_run_bak"):
+               subprocess.call(f"rm -r cp2k_run_bak", shell=True)
            subprocess.call("mv cp2k_run cp2k_run_bak", shell=True)
        subprocess.call("mkdir cp2k_run", shell=True)
        if args.deploy:
