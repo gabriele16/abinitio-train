@@ -305,7 +305,7 @@ def main():
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
               num_layers = num_layers_value, num_features = num_features_value, hidden_layers_dim = hidden_layers_dim_value, 
-              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value, parity = parity_value,
+              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value, parity = parity_value, l_max = l_max_value,
               batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss,
               validation_loss_delta = validation_loss_delta)
       with open(f"{system_name}.yaml", "w") as f:
@@ -318,7 +318,7 @@ def main():
       symbols_list = list(set(conf.get_chemical_symbols()))
       nequip_input = generate_nequip_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
-              num_layers = num_layers_value, num_features = num_features_value, parity = parity_value, 
+              num_layers = num_layers_value, num_features = num_features_value, parity = parity_value, l_max = l_max_value, 
               n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value, batch_size = batch_size_value, 
               chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss, 
               validation_loss_delta = validation_loss_delta)
