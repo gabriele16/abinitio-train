@@ -132,7 +132,7 @@ def parse_arguments():
                            help="cutoff value")
    arg_parser.add_argument('--polynomial_cutoff_p',
                            required = False,
-                           default = 48,
+                           default = 6,
                            help="polynomial cutoff p value")
    arg_parser.add_argument('--l_max',
                            required = False,
@@ -142,21 +142,38 @@ def parse_arguments():
                            required = False,
                            default = 2,
                            help="number of layers")
-   arg_parser.add_argument('--num_features',
+   arg_parser.add_argument('--num_tensor_features',
                            required = False,
-                           default = 32,
-                           help="number of features")
+                           default = 8,
+                           help="number of tensor features")
    arg_parser.add_argument('--parity',
                            required = False,
                            default = "o3_full",
                            choices = ["o3_full", "o3_restricted", "so3"],
                            help="which symmetry to use for parity, choose between o3_full, o3_restricted, so3")
-   arg_parser.add_argument('--hidden_layers_dim',
+   arg_parser.add_argument('--hyperparams_size',
+                           required = False,
+                           default = "custom",
+                           choices = ["custom" , "small", "medium", "large", "small_tens", "medium_tens"],
+                           help="flag that determines the overall size of the model, for allegro only, for now")   
+   arg_parser.add_argument('--two_body_mlp',
                            required = False,
                            nargs = "+",
                            type = int, 
-                           default = [128, 256, 512, 1024],
+                           default = [32, 64, 128],
                            help="hidden layer dimensions of the 2-body embedding MLP for allegro")   
+   arg_parser.add_argument('--latent_mlp',
+                           required = False,
+                           nargs = "+",
+                           type = int,
+                           default = [128],
+                           help="hidden layer dimensions of the latent MLP for allegro, the second mlp in the allegro layer")
+     arg_parser.add_argument('--output_mlp',
+                           required = False,
+                           nargs = "+",
+                           type = int,
+                           default = [32],
+                           help="hidden layer dimensions of the last (output) mlp to compute the edge energy") 
    arg_parser.add_argument('--max_epochs',
                            required = False,
                            default = 10000,
@@ -247,8 +264,11 @@ def main():
    cutoff_value = args.cutoff
    polynomial_cutoff_p_value = args.polynomial_cutoff_p
    num_layers_value = args.num_layers
-   num_features_value = args.num_features
-   hidden_layers_dim_value = args.hidden_layers_dim
+   num_tensor_features_value = args.num_tensor_features
+   two_body_mlp_value = args.two_body_mlp
+   latent_mlp_value = args.latent_mlp
+   output_mlp_value = args.output_mlp  
+   hyperparams_size = args.hyperparams_size
    parity_value = args.parity
    l_max_value = args.l_max
    default_dtype_value = args.default_dtype
@@ -302,12 +322,16 @@ def main():
       dataset = data_dir+'/'+dataset
       conf = sort(read(dataset, index = "-1"))
       symbols_list = list(set(conf.get_chemical_symbols()))
+
+      l_max_value, num_layers_value, num_tensor_features, two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value = set_hyperparams_size(hyperparams_size,
+              l_max_value, num_layers_value, num_tensor_features_value, two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value)
+
       allegro_input = generate_allegro_input(resultsdir=resultsdir, system_name=system_name, dataset_file_name = dataset,
               cutoff=cutoff_value, polynomial_cutoff_p=polynomial_cutoff_p_value, default_dtype = default_dtype_value,
-              num_layers = num_layers_value, num_features = num_features_value, hidden_layers_dim = hidden_layers_dim_value, 
-              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value, parity = parity_value, l_max = l_max_value,
-              batch_size = batch_size_value, chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss,
-              validation_loss_delta = validation_loss_delta)
+              num_layers = num_layers_value, num_tensor_features = num_tensor_features_value, two_body_mlp = two_body_mlp_value,
+              latent_mlp = latent_mlp_value, output_mlp = output_mlp_value,parity = parity_value, l_max = l_max_value,
+              n_train = n_train_value, n_val = n_val_value, max_epochs = max_epochs_value,  batch_size = batch_size_value, 
+              chemical_symbols=symbols_list, mask_labels = mask_labels, forces_loss = forces_loss, validation_loss_delta = validation_loss_delta)
       with open(f"{system_name}.yaml", "w") as f:
          f.write(allegro_input)
       print("*****************************")

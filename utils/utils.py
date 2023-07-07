@@ -215,16 +215,71 @@ def sort_xyz_file(input_file, output_file):
         # Write the sorted symbols and positions
         f.writelines(lines[2:])
 
+def set_hyperparams_size(hyerparams_size, l_max_value, num_layers_value, num_tensor_features_value, 
+                         two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value):
+
+    if hyperparams_size not in ["custom" , "small", "medium", "large", "small_tens", "medium_tens"]:
+          ValueError("Error: hyperparams_size can only be one of custom , small, small_tens, medium, medium_tens or big")
+    elif hyperparams_size == "small":
+          l_max_value = 1
+          num_layers_value = 1
+          num_tensor_features_value = 2
+          two_body_mlp_value = [32, 64]
+          latent_mlp_value = [64]
+          output_mlp_value = [32]
+          parity_value = "so3"
+    elif hyperparams_size == "small_tens":
+          l_max_value = 2
+          num_layers_value = 2
+          num_tensor_features_value = 4
+          two_body_mlp_value = [32, 64]
+          latent_mlp_value = [64]
+          output_mlp_value = [32]
+          parity_value = "so3"
+    elif hyperparams_size == "medium":
+          l_max_value = 1
+          num_layers_value = 1
+          num_tensor_features_value =  8
+          two_body_mlp_value = [32, 64, 128]
+          latent_mlp_value = [128]
+          output_mlp_value = [32]
+          parity_value = "o3_full"
+    elif hyperparams_size == "medium_tens":
+          l_max_value = 2
+          num_layers_value = 2
+          num_tensor_features_value =  16
+          two_body_mlp_value = [32, 64, 128]
+          latent_mlp_value = [128]
+          output_mlp_value = [32]
+          parity_value = "o3_full"
+    elif hyperparams_size == "large":
+          l_max_value = 2
+          num_layers_value = 2
+          num_tensor_features_value =  64
+          two_body_mlp_value = [128, 256, 512, 1024]
+          latent_mlp_value = [1024, 1024, 1024]
+          output_mlp_value = [128]
+          parity_value = "o3_full"
+
+    return l_max_value, num_layers_value, num_tensor_features_value, two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value
+
+
+def set_mlp_dim(default_mlp_dim, input_keyword):
+
+    mlp_dim = kwargs.get(input_keyword, default_mlp_dim)
+    mlp_dim_str = '['+', '.join(f"{layer_size}" for layer_size in mlp_dim)+']'
+    return mlp_dim_str
+
 def generate_allegro_input(*args, **kwargs):
 
     default_resultsdir = "resultsdir"
     default_system_name = "system"    
     default_cutoff = 5.0
-    default_polynomial_cutoff_p = 48
+    default_polynomial_cutoff_p = 6
     default_default_dtype = "float64"
     default_l_max = 2
     default_num_layers = 2
-    default_num_features = 64    
+    default_num_tensor_features = 8    
     default_dataset_file_name = "dataset.extxyz"
     default_n_train = 1000
     default_n_val = 100
@@ -233,7 +288,9 @@ def generate_allegro_input(*args, **kwargs):
     default_forces_loss = "MSELoss"
     default_batch_size = 1
     default_validation_loss_delta = 0.002
-    default_hidden_layers_dim = [128, 256, 512, 1024]
+    default_two_body_mlp = [32, 64, 128]
+    latent_mlp = [128]
+    output_mlp = [32]
     default_parity = "o3_full"
 
     cutoff = kwargs.get('cutoff', default_cutoff)
@@ -246,7 +303,7 @@ def generate_allegro_input(*args, **kwargs):
     l_max = kwargs.get('l_max', default_l_max)
     batch_size = kwargs.get('batch_size', default_batch_size)    
     num_layers = kwargs.get('num_layers', default_num_layers)  
-    num_features = kwargs.get('num_features', default_num_features)
+    num_tensor_features = kwargs.get('num_features', default_num_tensor_features)
     dataset_file_name = kwargs.get('dataset_file_name', default_dataset_file_name)
     n_train = kwargs.get('n_train', default_n_train)
     n_val = kwargs.get('n_val', default_n_val)
@@ -257,8 +314,10 @@ def generate_allegro_input(*args, **kwargs):
 
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = textwrap.indent('\n'.join(f"- {symbol}" for symbol in chemical_symbols), '  ')
-    hidden_layers_dim = kwargs.get('hidden_layers_dim', default_hidden_layers_dim)
-    hidden_layers_dim_str = '['+', '.join(f"{layer_size}" for layer_size in hidden_layers_dim)+']'
+
+    two_body_mlp = set_mlp_dim(default_two_body_mlp, 'two_body_mlp')
+    latent_mlp = set_mlp_dim(default_latent_mlp, 'latent_mlp')
+    output_mlp = set_mlp_dim(default_output_mlp, 'output_mlp')
 
     mask_labels = kwargs.get('mask_labels', default_mask_labels)
     if mask_labels:
@@ -309,20 +368,25 @@ parity: {parity}
 
 # Allegro layers:
 # number of tensor product layers, 1-3 usually best, more is more accurate but slower    
+# this is the layer block in the figure in the allegro paper
 num_layers: {num_layers}
-# number of features, more is more accurate but slower, 1, 4, 8, 16, 64, 128 are good options to try depending on data set
-env_embed_multiplicity: {num_features}
+# number of features in the tensor track, more is more accurate but slower, 1, 4, 8, 16, 64, 128 are good options to try depending on data set
+env_embed_multiplicity: {num_tensor_features}
 embed_initial_edge: true
 
 # hidden layer dimensions of the 2-body embedding MLP
-two_body_latent_mlp_latent_dimensions: {hidden_layers_dim_str}
+# In the figure of the allegro paper this is called two-body MLP and is the first MLP
+# Note that the embedding mlp shown in the layer of the paper
+# is obtained by combining the tensor features and this two-body MLP
+two_body_latent_mlp_latent_dimensions: {two_body_mlp}
 two_body_latent_mlp_nonlinearity: silu
 two_body_latent_mlp_initialization: uniform
 
 # hidden layer dimensions of the latent MLP
 # these MLPs are cheap if you have have large l/env_embed_multiplicity, so a good place to put model capacity if you can afford it
 # only if you are in the ultra-fast/scalable regime, make these smaller
-latent_mlp_latent_dimensions: [{hidden_layers_dim[-1]}, {hidden_layers_dim[-1]}, {hidden_layers_dim[-1]}]
+# In the allegro paper this is called Latent MLP and is the last MLP in the allegro layer
+latent_mlp_latent_dimensions: {latent_mlp} 
 latent_mlp_nonlinearity: silu
 latent_mlp_initialization: uniform
 latent_resnet: true
@@ -335,7 +399,8 @@ env_embed_mlp_initialization: uniform
 
 # Final MLP to go from Allegro latent space to edge energies:
 # hidden layer dimensions of the per-edge energy final MLP
-edge_eng_mlp_latent_dimensions: [{hidden_layers_dim[0]}]
+# This is called output mlp in the paper figure
+edge_eng_mlp_latent_dimensions: {output_mlp}
 edge_eng_mlp_nonlinearity: null
 edge_eng_mlp_initialization: uniform
 
