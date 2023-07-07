@@ -215,7 +215,7 @@ def sort_xyz_file(input_file, output_file):
         # Write the sorted symbols and positions
         f.writelines(lines[2:])
 
-def set_hyperparams_size(hyerparams_size, l_max_value, num_layers_value, num_tensor_features_value, 
+def set_hyperparams_size(hyperparams_size, l_max_value, num_layers_value, num_tensor_features_value, 
                          two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value):
 
     if hyperparams_size not in ["custom" , "small", "medium", "large", "small_tens", "medium_tens"]:
@@ -264,7 +264,7 @@ def set_hyperparams_size(hyerparams_size, l_max_value, num_layers_value, num_ten
     return l_max_value, num_layers_value, num_tensor_features_value, two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value
 
 
-def set_mlp_dim(default_mlp_dim, input_keyword):
+def set_mlp_dim(default_mlp_dim, input_keyword, kwargs):
 
     mlp_dim = kwargs.get(input_keyword, default_mlp_dim)
     mlp_dim_str = '['+', '.join(f"{layer_size}" for layer_size in mlp_dim)+']'
@@ -289,8 +289,8 @@ def generate_allegro_input(*args, **kwargs):
     default_batch_size = 1
     default_validation_loss_delta = 0.002
     default_two_body_mlp = [32, 64, 128]
-    latent_mlp = [128]
-    output_mlp = [32]
+    default_latent_mlp = [128]
+    default_output_mlp = [32]
     default_parity = "o3_full"
 
     cutoff = kwargs.get('cutoff', default_cutoff)
@@ -315,9 +315,9 @@ def generate_allegro_input(*args, **kwargs):
     chemical_symbols = kwargs.get('chemical_symbols', [])
     symbols = textwrap.indent('\n'.join(f"- {symbol}" for symbol in chemical_symbols), '  ')
 
-    two_body_mlp = set_mlp_dim(default_two_body_mlp, 'two_body_mlp')
-    latent_mlp = set_mlp_dim(default_latent_mlp, 'latent_mlp')
-    output_mlp = set_mlp_dim(default_output_mlp, 'output_mlp')
+    two_body_mlp = set_mlp_dim(default_two_body_mlp, 'two_body_mlp', kwargs)
+    latent_mlp = set_mlp_dim(default_latent_mlp, 'latent_mlp', kwargs)
+    output_mlp = set_mlp_dim(default_output_mlp, 'output_mlp', kwargs)
 
     mask_labels = kwargs.get('mask_labels', default_mask_labels)
     if mask_labels:

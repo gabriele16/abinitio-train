@@ -168,7 +168,7 @@ def parse_arguments():
                            type = int,
                            default = [128],
                            help="hidden layer dimensions of the latent MLP for allegro, the second mlp in the allegro layer")
-     arg_parser.add_argument('--output_mlp',
+   arg_parser.add_argument('--output_mlp',
                            required = False,
                            nargs = "+",
                            type = int,
@@ -322,6 +322,8 @@ def main():
       dataset = data_dir+'/'+dataset
       conf = sort(read(dataset, index = "-1"))
       symbols_list = list(set(conf.get_chemical_symbols()))
+
+      print(hyperparams_size)
 
       l_max_value, num_layers_value, num_tensor_features, two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value = set_hyperparams_size(hyperparams_size,
               l_max_value, num_layers_value, num_tensor_features_value, two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value)
