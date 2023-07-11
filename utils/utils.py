@@ -261,6 +261,14 @@ def set_hyperparams_size(hyperparams_size, l_max_value, num_layers_value, num_te
           output_mlp_value = [128]
           parity_value = "o3_full"
 
+    print(f"l_max: {l_max_value}")
+    print(f"num_layers: {num_layers_value}")
+    print(f"num_tensor_features: {num_tensor_features_value}")
+    print(f"two_body_mlp: {two_body_mlp_value}")
+    print(f"latent_mlp: {latent_mlp_value}")
+    print(f"output_mlp_value: {output_mlp_value}")
+    print(f"parity: {parity_value}")             
+
     return l_max_value, num_layers_value, num_tensor_features_value, two_body_mlp_value, latent_mlp_value, output_mlp_value, parity_value
 
 
