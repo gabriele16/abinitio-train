@@ -311,7 +311,7 @@ def generate_allegro_input(*args, **kwargs):
     l_max = kwargs.get('l_max', default_l_max)
     batch_size = kwargs.get('batch_size', default_batch_size)    
     num_layers = kwargs.get('num_layers', default_num_layers)  
-    num_tensor_features = kwargs.get('num_features', default_num_tensor_features)
+    num_tensor_features = kwargs.get('num_tensor_features', default_num_tensor_features)
     dataset_file_name = kwargs.get('dataset_file_name', default_dataset_file_name)
     n_train = kwargs.get('n_train', default_n_train)
     n_val = kwargs.get('n_val', default_n_val)
