@@ -154,6 +154,7 @@ cython_debug/
 
 wat_gra_bil_film
 wat_bil_gra_aimd
+AIMD_data
 
 results
 allegro
