@@ -929,7 +929,7 @@ def generate_cp2k_input_md(*args, **kwargs):
     
     cp2k_input_md = f"""
 @SET RESTART  {restart_cp2k}   
-@SET RESTART {system_name}
+@SET RESFILE {system_name}
 &GLOBAL
   PROJECT {system_name}
   RUN_TYPE MD
