@@ -145,7 +145,11 @@ def parse_arguments():
    arg_parser.add_argument('--num_tensor_features',
                            required = False,
                            default = 8,
-                           help="number of tensor features")
+                           help="number of tensor features for allegro")
+   arg_parser.add_argument('--num_features',
+                           required = False,
+                           default = 8,
+                           help="number of features for nequip")   
    arg_parser.add_argument('--parity',
                            required = False,
                            default = "o3_full",
@@ -265,6 +269,7 @@ def main():
    polynomial_cutoff_p_value = args.polynomial_cutoff_p
    num_layers_value = args.num_layers
    num_tensor_features_value = args.num_tensor_features
+   num_features_value = args.num_features   
    two_body_mlp_value = args.two_body_mlp
    latent_mlp_value = args.latent_mlp
    output_mlp_value = args.output_mlp  
